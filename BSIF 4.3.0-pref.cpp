@@ -96,7 +96,7 @@ FILE *fp = NULL;
 int run(void)
 {
 	// 初始化界面
-	system("mode con cols=61 lines=13 && title BSIF-4.2.3");
+	system("mode con cols=60 lines=12 && title BSIF-4.2.3");
 	// 日志文件系统启动
 	fp = fopen("data.ini", "w");
 	// 图形界面启动
@@ -108,7 +108,7 @@ int run(void)
 	}
 	// 光标定位至（0,0）
 	setp(0, 0);
-	std::cout << "\t\t\t\t\t   [ W&K 跳跃障碍物 ]" << std::endl;
+	std::cout << "\t\t\t\t\t  [ W&K 跳跃障碍物 ]" << std::endl;
 	srand(time(0));
 	// 初始化数据
 	user.hp = 1000;
@@ -403,13 +403,13 @@ int run(void)
 			return 0;
 
 	// 帧率
-	x: // time_end=GetTickCount();
+	x:  //time_end=GetTickCount();
 		QueryPerformanceCounter(&time_union);
 		time_end = (double)time_union.QuadPart;
 		time_diff = (double)(time_end - time_st) / time_freq; // 时间差值 单位：次数
 		FPS = 1000.0 / (time_diff * 1000.0);
 
-		while ((int)FPS > 2000) // 帧率锁定60FPS
+		while ((int)FPS > 3000) // 帧率锁定60FPS
 			goto x;
 
 		for (int i = 0; i <= 39; i++)
@@ -471,7 +471,7 @@ void led(void)
 		{
 			if (tdimg[y][x] == 1)
 			{
-				std::cout.flush();
+				
 				std::cout << "♀";
 				std::cout.flush();
 			}
@@ -480,7 +480,7 @@ void led(void)
 			else if (tdimg[y][x] == 3 && times == 0)
 			{
 				//设置为绿色
-				std::cout.flush();
+				// std::cout.flush();
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_GREEN);
 				std::cout << "█ ";
 				std::cout.flush();
@@ -488,7 +488,7 @@ void led(void)
 			}
 			else if (tdimg[y][x] == 5)
 			{
-				std::cout.flush();
+				// std::cout.flush();
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_BLUE);
 				std::cout << "█";
 				std::cout.flush();
@@ -497,10 +497,11 @@ void led(void)
 			else if (tdimg[y][x] == 4)
 			{
 				std::cout << "≡";
+				std::cout.flush();
 			}
 			else if (tdimg[y][x] == 2)
 			{
-				std::cout.flush();
+				
 				std::cout << "++";
 				std::cout.flush();
 			}
@@ -590,7 +591,7 @@ d:
 
 	// 初始化菜单窗口
 	prtsta();
-	setp(0, 1);
+	setp(0, 0);
 	std::cout << "\n\n---------BSIF-4.2.X---------    \t  1. 测试\n    \t  2. 关于\n    \t  S. 设置\n    \t  Q. 退出";
 	std::cout.flush();
 	prtsqu(27, 8);
@@ -808,7 +809,7 @@ void prtsqu(int x, int y)
 	//		for(int b=0;b<=y;b++)
 	//			std::cout<<" ";
 	com_set_green
-		setp(0, 2);
+		setp(0, 0);
 	for (int i = 0; i <= x; i++)
 		std::cout << '=';
 	std::cout.flush();
