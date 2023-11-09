@@ -1,0 +1,17 @@
+  // while (true)
+    // {
+    //     SetPosition(2, 2);
+    //     std::cout << "█ █ ♀1 "
+    //               << "Hello " << num << "\n";
+    //     std::cout.flush();
+    //     num++;
+    // }
+
+
+
+    // auto it = map.begin();
+    // auto& element = *it;
+    // element[2] = 'X';
+    // map[2][2] = 'X';
+
+    // appendMapToFile("map.txt");

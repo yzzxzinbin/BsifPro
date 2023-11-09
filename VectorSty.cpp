@@ -6,6 +6,13 @@
 #include <iostream>
 #include <fstream>
 #include <random>
+#include <filesystem>
+#include <conio.h>
+std::uintmax_t getFileSize(const std::string &filename)
+{
+    std::filesystem::path filePath(filename);
+    return std::filesystem::file_size(filePath);
+}
 void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &filename)
 {
     std::ifstream file(filename);
@@ -80,6 +87,38 @@ void printMapByRow(const std::vector<std::array<char, 64>> *map)
         std::cout << std::endl;
     }
 }
+void printMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, int colIdx)
+{
+    int printWidth = 41;
+    int printHeight = 19;
+
+    int startRow = rowIdx - printHeight / 2;
+    int startCol = colIdx - printWidth / 2;
+
+    for (int col = 0; col < printHeight; col++)
+    {
+        for (int row = 0; row < printWidth; row++)
+        {
+            int mapCol = startCol + col;
+            int mapRow = startRow + row;
+
+            // 中央索引坐标打印X
+            if (mapRow == rowIdx && mapCol == colIdx)
+            {
+                std::cout << "X";
+            }
+            else if (mapRow >= 0 && mapRow < map.size() && mapCol >= 0 && mapCol < 64)
+            {
+                std::cout << map[mapRow][mapCol];
+            }
+            else
+            {
+                std::cout << " ";
+            }
+        }
+        std::cout << std::endl;
+    }
+}
 void appendMapToFile(const std::string &filename)
 {
     std::ofstream file(filename, std::ios::app);
@@ -138,7 +177,6 @@ bool SetPosition(int x, int y)
 
 int main()
 {
-
     // 关闭IO同步
     std::ios::sync_with_stdio(false);
     std::cin.tie(0);
@@ -163,31 +201,36 @@ int main()
 
     // 创建地图
     std::vector<std::array<char, 64>> map;
-
-    // appendMapToFile("map.txt");
-
+    int rolindex = 0;
+    int colindex = 0;
     readMapFromFile(map, "map.txt");
-    // auto it = map.begin();
-    // auto& element = *it;
-    // element[2] = 'X';
-    map[2][2] = 'X';
-    writeMapToFile(map, "map.txt");
 
-    printMapByCol(&map);
-
-    int num;
-    num = map.size();
+    // 写一个循环,循环中非阻塞读取键盘输入,然后使用switch对awsd四个按键进行响应,即改变相应的地图索引值
+    while (true)
+    {
+        Sleep(1);
+        if (GetAsyncKeyState('W') & 0x8000) // 检查W键是否被按下
+        {
+            colindex--;
+        }
+        if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下
+        {
+            colindex++;
+        }
+        if (GetAsyncKeyState('A') & 0x8000) // 检查A键是否被按下
+        {
+            rolindex--;
+        }
+        if (GetAsyncKeyState('D') & 0x8000) // 检查D键是否被按下
+        {
+            rolindex++;
+        }
+        SetPosition(0, 1);
+        printMapByRange(map, rolindex, colindex);
+    }
+    int num = map.size();
     std::cout << num << std::endl;
-    // std::cin >> num;
+    writeMapToFile(map, "map.txt");
     system("pause");
-
-    // while (true)
-    // {
-    //     SetPosition(2, 2);
-    //     std::cout << "█ █ ♀1 "
-    //               << "Hello " << num << "\n";
-    //     std::cout.flush();
-    //     num++;
-    // }
     return 0;
 }

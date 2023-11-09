@@ -1,7 +1,7 @@
 // BASIC INTERFACE.cpp - 2020.08.28 - 2020.09.17 - 2021.09.27 - 2023.05.23
 // BSIF4.x是以基本接口工程（BSIF3.x）为蓝本进行更新的测试程序
 // by:yangzhouzinbin
-// 版本号:4.2.X
+// 版本号:4.3.0
 // 2021.09.24修订：修复了右边界检查的错误 ,恢复了自由移动和攻击行为,增加了新的图形显示方案
 // 2021.09.25修订：修复了连击卡顿的BUG
 // 2021.09.26修订：彻底解决属性条闪烁问题
@@ -584,15 +584,15 @@ d:
 	//	//1685025682
 	//	if(license>1684942800) {
 	//		setp(0, 3);
-	//		std::cout << "\n\n---------BSIF-4.2.X---------\n    \t  正在自检\n    \t   - 5% -\n█==\t\t\t  █" << std::endl;
-	//		MessageBox(NULL,L"\n    此拷贝程序为 BSIF4.2.X 测试版,仅用于测试程序稳定性,获取正式版请联系作者\n\n\n\t\t\t    >运行许可截止<\t",L" BSIF STARTING INFO",MB_OK);
+	//		std::cout << "\n\n---------BSIF-4.3.0---------\n    \t  正在自检\n    \t   - 5% -\n█==\t\t\t  █" << std::endl;
+	//		MessageBox(NULL,L"\n    此拷贝程序为 BSIF4.3.0 测试版,仅用于测试程序稳定性,获取正式版请联系作者\n\n\n\t\t\t    >运行许可截止<\t",L" BSIF STARTING INFO",MB_OK);
 	//		exit(0);
 	//	}
 
 	// 初始化菜单窗口
 	prtsta();
 	setp(0, 0);
-	std::cout << "\n\n---------BSIF-4.2.X---------    \t  1. 测试\n    \t  2. 关于\n    \t  S. 设置\n    \t  Q. 退出";
+	std::cout << "\n\n---------BSIF-4.3.0---------    \t  1. 测试\n    \t  2. 关于\n    \t  S. 设置\n    \t  Q. 退出";
 	std::cout.flush();
 	prtsqu(27, 8);
 
@@ -604,7 +604,7 @@ d:
 		case 'q':
 			return 0;
 		case '2':
-			MessageBoxA(GetConsoleWindow(), "Copyright 2023 Zhou Xu.All rights reserved.", " BSIF 4.2.X ALPHA", MB_OK | MB_ICONASTERISK);
+			MessageBoxA(GetConsoleWindow(), "Copyright 2023 Zhou Xu.All rights reserved.", " BSIF 4.3.0 ALPHA", MB_OK | MB_ICONASTERISK);
 			continue;
 		case '1':
 			if (run() != 1)
