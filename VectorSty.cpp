@@ -89,15 +89,15 @@ void printMapByRow(const std::vector<std::array<char, 64>> *map)
 }
 void printMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, int colIdx)
 {
-    int printWidth = 41;
-    int printHeight = 19;
+    int printWidth = 25;
+    int printHeight = 49;
 
     int startRow = rowIdx - printHeight / 2;
     int startCol = colIdx - printWidth / 2;
 
-    for (int col = 0; col < printHeight; col++)
+    for (int col = 0; col < printWidth; col++)
     {
-        for (int row = 0; row < printWidth; row++)
+        for (int row = 0; row < printHeight; row++)
         {
             int mapCol = startCol + col;
             int mapRow = startRow + row;
@@ -105,15 +105,24 @@ void printMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
             // 中央索引坐标打印X
             if (mapRow == rowIdx && mapCol == colIdx)
             {
-                std::cout << "X";
+                std::cout << "X ";
             }
             else if (mapRow >= 0 && mapRow < map.size() && mapCol >= 0 && mapCol < 64)
             {
-                std::cout << map[mapRow][mapCol];
+                // std::cout << map[mapRow][mapCol];
+                switch (map[mapRow][mapCol])
+                {
+                case '0':
+                    std::cout << "█ ";
+                    break;
+                case '1':
+                    std::cout << "  ";
+                    break;
+                }
             }
             else
             {
-                std::cout << " ";
+                std::cout << "  ";
             }
         }
         std::cout << std::endl;
