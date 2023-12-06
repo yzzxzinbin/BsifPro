@@ -409,7 +409,7 @@ int run(void)
 		time_diff = (double)(time_end - time_st) / time_freq; // 时间差值 单位：次数
 		FPS = 1000.0 / (time_diff * 1000.0);
 
-		while ((int)FPS > 3000) // 帧率锁定60FPS
+		while ((int)FPS > 100) // 帧率锁定60FPS
 			goto x;
 
 		for (int i = 0; i <= 39; i++)

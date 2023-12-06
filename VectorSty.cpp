@@ -1,5 +1,5 @@
-// 测试Windows控制台输出特殊字符的程序
-// 使用Windows API实现光标的定位等操作
+// BSIF 6Gen1 - 基本接口工程第六代
+// Ver 6.1.0 - pre
 #include <windows.h>
 #include <vector>
 #include <array>
@@ -8,6 +8,47 @@
 #include <random>
 #include <filesystem>
 #include <conio.h>
+
+class FrameRateController
+{
+public:
+    FrameRateController()
+    {
+        resetStartTime();
+    }
+
+    double getFps()
+    {
+        QueryPerformanceFrequency((LARGE_INTEGER *)&time_union);
+        timeFreq = (double)time_union.QuadPart;
+        getCurrentTime();
+        double timeDiff = (timeNow - startTime) / timeFreq;
+        double fps = 1000.0 / (timeDiff * 1000);
+        return fps;
+    }
+    void printFps()
+    {
+        double fps = getFps();
+        std::cout << "\tFPS: " << fps << "    ";
+        std::cout.flush();
+    }
+    void resetStartTime()
+    {
+        QueryPerformanceCounter(&time_union);
+        startTime = time_union.QuadPart;
+    }
+
+private:
+    LARGE_INTEGER time_union;
+    double startTime;
+    double timeFreq;
+    double timeNow;
+    void getCurrentTime()
+    {
+        QueryPerformanceCounter(&time_union);
+        timeNow = time_union.QuadPart;
+    }
+};
 std::uintmax_t getFileSize(const std::string &filename)
 {
     std::filesystem::path filePath(filename);
@@ -34,11 +75,13 @@ void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &
             map.push_back(row);
         }
         file.close();
-        std::cout << "Map read from file successfully." << std::endl;
+        std::cout << "Map read from file successfully.";
+        std::cout.flush();
     }
     else
     {
-        std::cout << "Failed to open file: " << filename << std::endl;
+        std::cout << "Failed to open file: " << filename;
+        std::cout.flush();
     }
 }
 void writeMapToFile(const std::vector<std::array<char, 64>> &map, const std::string &filename)
@@ -90,7 +133,7 @@ void printMapByRow(const std::vector<std::array<char, 64>> *map)
 void printMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, int colIdx)
 {
     int printWidth = 25;
-    int printHeight = 49;
+    int printHeight = 48;
 
     int startRow = rowIdx - printHeight / 2;
     int startCol = colIdx - printWidth / 2;
@@ -105,7 +148,7 @@ void printMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
             // 中央索引坐标打印X
             if (mapRow == rowIdx && mapCol == colIdx)
             {
-                std::cout << "X ";
+                std::cout << "☯ ";
             }
             else if (mapRow >= 0 && mapRow < map.size() && mapCol >= 0 && mapCol < 64)
             {
@@ -113,11 +156,34 @@ void printMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
                 switch (map[mapRow][mapCol])
                 {
                 case '0':
-                    std::cout << "█ ";
+                    std::cout << "██";
                     break;
                 case '1':
                     std::cout << "  ";
                     break;
+                case '2':
+                    std::cout << "▒▒";
+                    break;
+                case '3':
+                    std::cout << "▓▓";
+                    break;
+                case '4':
+                    std::cout << "▩ ";
+                    break;
+                case '5':
+                    std::cout << "☰";
+                    break;
+                case '6':
+                    std::cout << "☐";
+                    break;
+                case '7':
+                    std::cout << "▓▓";
+                    break;
+                case '8':
+                    std::cout << "▓▓";
+                    break;
+                case '9':
+                    std::cout << "▓▓";
                 }
             }
             else
@@ -184,12 +250,18 @@ bool SetPosition(int x, int y)
     return SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
-int main()
+int main(void)
 {
+    // 全局帧数计数器
+    unsigned long long int frameCount = 0;
+    FrameRateController FPS;
+
     // 关闭IO同步
     std::ios::sync_with_stdio(false);
     std::cin.tie(0);
     std::cout.tie(0);
+
+    system("mode con cols=96 lines=27");
 
     // 定义窗口句柄变量,包括窗口句柄,标准输出句柄等
     HWND hwnd = GetConsoleWindow();
@@ -210,32 +282,41 @@ int main()
 
     // 创建地图
     std::vector<std::array<char, 64>> map;
-    int rolindex = 0;
-    int colindex = 0;
+    int rolindex = 1;
+    int colindex = 1;
     readMapFromFile(map, "map.txt");
 
     // 写一个循环,循环中非阻塞读取键盘输入,然后使用switch对awsd四个按键进行响应,即改变相应的地图索引值
-    while (true)
+    for (frameCount = 0; true; frameCount++)
     {
-        Sleep(1);
-        if (GetAsyncKeyState('W') & 0x8000) // 检查W键是否被按下
+        FPS.resetStartTime();
+        if (frameCount % 40 == 0)
         {
-            colindex--;
-        }
-        if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下
-        {
-            colindex++;
-        }
-        if (GetAsyncKeyState('A') & 0x8000) // 检查A键是否被按下
-        {
-            rolindex--;
-        }
-        if (GetAsyncKeyState('D') & 0x8000) // 检查D键是否被按下
-        {
-            rolindex++;
+            if ((GetAsyncKeyState('W') & 0x8000) && map[rolindex][colindex - 1] == '1') // 检查W键是否被按下,并且地图数据中相应位置为1
+            {
+                colindex--;
+            }
+            if (GetAsyncKeyState('S') & 0x8000 && map[rolindex][colindex + 1] == '1') // 检查S键是否被按下
+            {
+                colindex++;
+            }
+            if (GetAsyncKeyState('A') & 0x8000 && map[rolindex - 1][colindex] == '1') // 检查A键是否被按下
+            {
+                rolindex--;
+            }
+            if (GetAsyncKeyState('D') & 0x8000 && map[rolindex + 1][colindex] == '1') // 检查D键是否被按下
+            {
+                rolindex++;
+            }
         }
         SetPosition(0, 1);
         printMapByRange(map, rolindex, colindex);
+        std::cout.flush();
+        SetPosition(40, 0);
+        std::cout << "Frame: " << frameCount;
+        std::cout.flush();
+        if (frameCount % 50 == 0)
+            FPS.printFps();
     }
     int num = map.size();
     std::cout << num << std::endl;
