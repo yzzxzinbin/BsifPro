@@ -8,7 +8,8 @@
 #include <random>
 #include <filesystem>
 #include <conio.h>
-
+#include <mmsystem.h>
+#define FPSLIMIT 120
 class FrameRateController
 {
 public:
@@ -16,20 +17,28 @@ public:
     {
         resetStartTime();
     }
-
     double getFps()
     {
         QueryPerformanceFrequency((LARGE_INTEGER *)&time_union);
         timeFreq = (double)time_union.QuadPart;
         getCurrentTime();
         double timeDiff = (timeNow - startTime) / timeFreq;
-        double fps = 1000.0 / (timeDiff * 1000);
+        fps = 1000.0 / (timeDiff * 1000);
         return fps;
     }
     void printFps()
     {
+        int i = 0;
+    x:
+        //sleepMicroseconds(100);
         double fps = getFps();
-        std::cout << "\tFPS: " << fps << "    ";
+        for (; (int)fps > FPSLIMIT;)
+        {
+            i++;
+            goto x;
+        }
+        std::cout << "\tFPS: " << fps << "  "
+                  << "uselessCirPerFrame:" << i << "    ";
         std::cout.flush();
     }
     void resetStartTime()
@@ -37,12 +46,21 @@ public:
         QueryPerformanceCounter(&time_union);
         startTime = time_union.QuadPart;
     }
+    void sleepMicroseconds(DWORD microseconds)
+    {
+        TIMECAPS tc;
+        timeGetDevCaps(&tc, sizeof(TIMECAPS));
+        timeBeginPeriod(tc.wPeriodMin);
+        Sleep(microseconds / 1000);
+        timeEndPeriod(tc.wPeriodMin);
+    }
 
 private:
     LARGE_INTEGER time_union;
     double startTime;
     double timeFreq;
     double timeNow;
+    double fps;
     void getCurrentTime()
     {
         QueryPerformanceCounter(&time_union);
@@ -258,8 +276,8 @@ int main(void)
 
     // 关闭IO同步
     std::ios::sync_with_stdio(false);
-    std::cin.tie(0);
-    std::cout.tie(0);
+    std::cin.tie(nullptr);
+    std::cout.tie(nullptr);
 
     system("mode con cols=96 lines=27");
 
@@ -290,7 +308,7 @@ int main(void)
     for (frameCount = 0; true; frameCount++)
     {
         FPS.resetStartTime();
-        if (frameCount % 40 == 0)
+        if (frameCount % 3 == 0)
         {
             if ((GetAsyncKeyState('W') & 0x8000) && map[rolindex][colindex - 1] == '1') // 检查W键是否被按下,并且地图数据中相应位置为1
             {
@@ -315,8 +333,7 @@ int main(void)
         SetPosition(40, 0);
         std::cout << "Frame: " << frameCount;
         std::cout.flush();
-        if (frameCount % 50 == 0)
-            FPS.printFps();
+        FPS.printFps();
     }
     int num = map.size();
     std::cout << num << std::endl;
