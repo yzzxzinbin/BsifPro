@@ -11,6 +11,9 @@
 #include <filesystem>
 #include <conio.h>
 #include <mmsystem.h>
+#pragma comment(linker, "\"/manifestdependency:type='win32' \
+name = 'Microsoft.Windows.Common-Controls' version = '6.0.0.0' \
+processorArchitecture = '*' publicKeyToken = '6595b64144ccf1df' language = '*'\"")
 #define FPSLIMIT 60
 #define WIN_MENU_LONAXIS 28 // 横长
 #define WIN_MENU_HORAXIS 9  // 纵长
@@ -105,6 +108,7 @@ public:
         SetConsoleTitleA(title.c_str());
     }
 };
+ConsoleStyle cstyle;
 void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &filename)
 {
     std::ifstream file(filename);
@@ -318,12 +322,28 @@ bool SetPosition(int x, int y)
 
     return SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
-void SetConsoleWindow(int width, int height, int x, int y)
+void SetConsoleWindowPosition(int x, int y)
 {
-    HWND console = GetConsoleWindow();
+    HWND hwnd = GetConsoleWindow();
     RECT r;
-    GetWindowRect(console, &r);
-    MoveWindow(console, x, y, width, height, TRUE);
+    GetWindowRect(hwnd, &r);
+
+    int width = r.right - r.left;
+    int height = r.bottom - r.top;
+
+    int screen_width = GetSystemMetrics(SM_CXSCREEN);
+    int screen_height = GetSystemMetrics(SM_CYSCREEN);
+
+    if (x == -1)
+    {
+        x = (screen_width - width) / 2;
+    }
+    if (y == -1)
+    {
+        y = (screen_height - height) / 2;
+    }
+
+    MoveWindow(hwnd, x, y, width, height, TRUE);
 }
 bool OpenANSIControlChar()
 {
@@ -353,30 +373,13 @@ void InitTestEnv()
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
     std::cout.tie(nullptr);
-
     system("mode con cols=96 lines=30");
-
-    // 定义窗口句柄变量,包括窗口句柄,标准输出句柄等
-    hwnd = GetConsoleWindow();
-    hOutStd = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    // 代码页设置为UTF-8,增加对特殊字符的支持
-    SetConsoleOutputCP(65001);
-    SetConsoleCP(65001);
-
-    // 开启ANSI转义序列功能
-    OpenANSIControlChar();
-
     // 窗口置顶
+    SetConsoleWindowPosition(-1, -1);
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_DRAWFRAME);
-
-    // 关闭光标显示
-    CONSOLE_CURSOR_INFO cur_info;
-    GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cur_info);
-    cur_info.bVisible = FALSE;
-    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cur_info);
+    cstyle.SetFont(L"Consolas", 18);
 }
-int main(void)
+int CoreCircle(void)
 {
     InitTestEnv();
     // 全局帧数计数器
@@ -390,7 +393,7 @@ int main(void)
     char playerstate = 's';
     readMapFromFile(map, "map.txt");
 
-    // 循环非阻塞读取键盘输入,对awsd等按键进行响应,改变相应的地图索引值
+    // 写一个循环,循环中非阻塞读取键盘输入,然后使用switch对awsd四个按键进行响应,即改变相应的地图索引值
     for (frameCount = 0; true; frameCount++)
     {
         FPS.resetStartTime();
@@ -428,7 +431,7 @@ int main(void)
                 }
                 playerstate = 'd';
             }
-            if (GetAsyncKeyState('J') & 0x8000) // 检查上键是否被按下
+            if (GetAsyncKeyState('J') & 0x8000) // 检查J键是否被按下
             {
                 switch (playerstate)
                 {
@@ -465,5 +468,85 @@ int main(void)
     std::cout << num << std::endl;
     writeMapToFile(map, "map.txt");
     system("pause");
+    return 0;
+}
+void InitMainDrive(void)
+{
+    // 定义窗口句柄变量,包括窗口句柄,标准输出句柄等
+    hwnd = GetConsoleWindow();
+    hOutStd = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    SetConsoleWindowPosition(-1, -1);
+    // 开启ANSI转义序列功能
+    OpenANSIControlChar();
+    cstyle.SetFont(L"新宋体", 22);
+    cstyle.SetConTitle("BSIF | MAIN");
+
+    // 关闭光标显示
+    CONSOLE_CURSOR_INFO cur_info;
+    GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cur_info);
+    cur_info.bVisible = FALSE;
+    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cur_info);
+
+    // 代码页设置为UTF-8,增加对特殊字符的支持
+    SetConsoleOutputCP(65001);
+    SetConsoleCP(65001);
+
+    // int cols = WIN_MENU_LONAXIS; // 指定列数
+    // int lines = WIN_MENU_HORAXIS - 1; // 指定行数
+    // std::string command = "mode con cols=" + std::to_string(cols) + " lines=" + std::to_string(lines);
+    // system(command.c_str());
+
+    SMALL_RECT windowSize = {0, 0, WIN_MENU_LONAXIS - 1, WIN_MENU_HORAXIS - 2};
+    SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &windowSize);
+    COORD bufferSize = {WIN_MENU_LONAXIS, WIN_MENU_HORAXIS - 1};
+    SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), bufferSize);
+
+    SetPosition(0, 0);
+    std::cout << "\033[33m\033[1m\033[46m"
+              << "\n---------BSIF 6.0.1---------"
+              << "\033[36m\033[1m\033[40m"
+              << "\n\n    \t  1. 测试\n    \t  2. 关于\n    \t  S. 设置\n    \t  Q. 退出"
+              << "\033[0m";
+
+    SetPosition(0, 0);
+    for (int i = 0; i <= WIN_MENU_LONAXIS - 1; i++)
+        std::cout << "\033[32m" << '=' << "\033[0m";
+    SetPosition(0, WIN_MENU_HORAXIS - 2);
+    for (int i = 0; i <= WIN_MENU_LONAXIS - 1; i++)
+        std::cout << "\033[32m" << '=' << "\033[0m";
+    for (int i = 0; i <= WIN_MENU_HORAXIS - 2; i++)
+    {
+        SetPosition(0, i);
+        std::cout << "|";
+    }
+    for (int i = 0; i <= WIN_MENU_HORAXIS - 2; i++)
+    {
+        SetPosition(WIN_MENU_LONAXIS - 1, i);
+        std::cout << "|";
+    }
+    SetPosition(0, 0);
+}
+int main(void)
+{
+    InitMainDrive();
+
+    while (true)
+    {
+        if (GetAsyncKeyState('1') & 0x8000) // 检查S键是否被按下，并且地图数据中相应位置为1
+        {
+            CoreCircle();
+        }
+        if (GetAsyncKeyState('2') & 0x8000) // 检查S键是否被按下，并且地图数据中相应位置为1
+        {
+            MessageBoxA(GetConsoleWindow(), "Copyright 2023 Zhou Xu.All rights reserved.", " BSIF 4.3.0 ALPHA", MB_OK | MB_ICONASTERISK);
+            continue;
+        }
+        if (GetAsyncKeyState('Q') & 0x8000) // 检查S键是否被按下，并且地图数据
+        {
+            break;
+        }
+    }
+    std::cin.get();
     return 0;
 }

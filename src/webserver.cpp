@@ -21,7 +21,7 @@ int main() {
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(12345); // 设置端口号
-    serverAddress.sin_addr.s_addr = inet_addr("192.168.77.12");
+    serverAddress.sin_addr.s_addr = inet_addr("172.21.103.132");
     
     // 绑定套接字到服务器地址
     bind(serverSocket, (sockaddr*)&serverAddress, sizeof(serverAddress));

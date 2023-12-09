@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32602.215
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BSIF 5.0.2", "BSIF 5.0.2.vcxproj", "{DE3F4F60-CDF6-47C8-9643-7EED7C1AEE41}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DE3F4F60-CDF6-47C8-9643-7EED7C1AEE41}.Debug|x64.ActiveCfg = Debug|x64
+		{DE3F4F60-CDF6-47C8-9643-7EED7C1AEE41}.Debug|x64.Build.0 = Debug|x64
+		{DE3F4F60-CDF6-47C8-9643-7EED7C1AEE41}.Debug|x86.ActiveCfg = Debug|Win32
+		{DE3F4F60-CDF6-47C8-9643-7EED7C1AEE41}.Debug|x86.Build.0 = Debug|Win32
+		{DE3F4F60-CDF6-47C8-9643-7EED7C1AEE41}.Release|x64.ActiveCfg = Release|x64
+		{DE3F4F60-CDF6-47C8-9643-7EED7C1AEE41}.Release|x64.Build.0 = Release|x64
+		{DE3F4F60-CDF6-47C8-9643-7EED7C1AEE41}.Release|x86.ActiveCfg = Release|Win32
+		{DE3F4F60-CDF6-47C8-9643-7EED7C1AEE41}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {39DDE2D3-7CB9-414B-A57A-1AEF6A8AD6F5}
+	EndGlobalSection
+EndGlobal

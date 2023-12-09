@@ -1,7 +1,5 @@
-// BASICINTERFACE 6Gen1 - 基本接口工程第六代
-// Ver 6.1.0 - preRelease
-// 2020.08.28 - 2020.09.17 - 2021.09.27 - 2023.05.23 - 2023.12.09
-// 231209(6.1.0 - preRelease):更新了图形显示函数,在不损失性能的前提下新增彩色文字输出
+// BSIF 6Gen1 - 基本接口工程第六代
+// Ver 6.1.0 - pre
 #include <windows.h>
 #include <vector>
 #include <array>
@@ -10,12 +8,6 @@
 #include <random>
 #include <filesystem>
 #include <conio.h>
-#include <mmsystem.h>
-#define FPSLIMIT 60
-#define WIN_MENU_LONAXIS 28 // 横长
-#define WIN_MENU_HORAXIS 9  // 纵长
-HANDLE hOutStd;
-HWND hwnd;
 
 class FrameRateController
 {
@@ -24,28 +16,20 @@ public:
     {
         resetStartTime();
     }
+
     double getFps()
     {
         QueryPerformanceFrequency((LARGE_INTEGER *)&time_union);
         timeFreq = (double)time_union.QuadPart;
         getCurrentTime();
         double timeDiff = (timeNow - startTime) / timeFreq;
-        fps = 1000.0 / (timeDiff * 1000);
+        double fps = 1000.0 / (timeDiff * 1000);
         return fps;
     }
     void printFps()
     {
-        int i = 0;
-    x:
-        // sleepMicroseconds(100);
         double fps = getFps();
-        for (; (int)fps > FPSLIMIT;)
-        {
-            i++;
-            goto x;
-        }
-        std::cout << "\tFPS: " << fps << "  "
-                  << "uselessCirPerFrame:" << i << " ";
+        std::cout << "\tFPS: " << fps << "    ";
         std::cout.flush();
     }
     void resetStartTime()
@@ -53,58 +37,23 @@ public:
         QueryPerformanceCounter(&time_union);
         startTime = time_union.QuadPart;
     }
-    void sleepMicroseconds(DWORD microseconds)
-    {
-        TIMECAPS tc;
-        timeGetDevCaps(&tc, sizeof(TIMECAPS));
-        timeBeginPeriod(tc.wPeriodMin);
-        Sleep(microseconds / 1000);
-        timeEndPeriod(tc.wPeriodMin);
-    }
 
 private:
     LARGE_INTEGER time_union;
     double startTime;
     double timeFreq;
     double timeNow;
-    double fps;
     void getCurrentTime()
     {
         QueryPerformanceCounter(&time_union);
         timeNow = time_union.QuadPart;
     }
 };
-class ConsoleStyle
+std::uintmax_t getFileSize(const std::string &filename)
 {
-public:
-    static void SetFont(const wchar_t *fontName, int fontSize)
-    {
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        CONSOLE_FONT_INFOEX fontInfo;
-        fontInfo.cbSize = sizeof(CONSOLE_FONT_INFOEX);
-        GetCurrentConsoleFontEx(hConsole, FALSE, &fontInfo);
-
-        wcscpy_s(fontInfo.FaceName, fontName);
-        fontInfo.dwFontSize.X = 0;
-        fontInfo.dwFontSize.Y = fontSize;
-
-        SetCurrentConsoleFontEx(hConsole, FALSE, &fontInfo);
-    }
-
-    static void SetColor(int colorIndex, COLORREF color)
-    {
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        CONSOLE_SCREEN_BUFFER_INFOEX screenBufferInfo;
-        screenBufferInfo.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX);
-        GetConsoleScreenBufferInfoEx(hConsole, &screenBufferInfo);
-        screenBufferInfo.ColorTable[colorIndex] = color;
-        SetConsoleScreenBufferInfoEx(hConsole, &screenBufferInfo);
-    }
-    static void SetConTitle(const std::string &title)
-    {
-        SetConsoleTitleA(title.c_str());
-    }
-};
+    std::filesystem::path filePath(filename);
+    return std::filesystem::file_size(filePath);
+}
 void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &filename)
 {
     std::ifstream file(filename);
@@ -156,12 +105,7 @@ void writeMapToFile(const std::vector<std::array<char, 64>> &map, const std::str
         std::cout << "Failed to open file: " << filename << std::endl;
     }
 }
-void SetColor(UINT uFore, UINT uBack)
-{
-    static HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(handle, uFore + uBack * 0x10);
-}
-void PrintMapByCol(const std::vector<std::array<char, 64>> *map)
+void printMapByCol(const std::vector<std::array<char, 64>> *map)
 {
     for (const auto &row : (*map))
     {
@@ -175,7 +119,7 @@ void PrintMapByCol(const std::vector<std::array<char, 64>> *map)
         index++;
     }
 }
-void PrintMapByRow(const std::vector<std::array<char, 64>> *map)
+void printMapByRow(const std::vector<std::array<char, 64>> *map)
 {
     for (size_t col = 0; col < 64; col++)
     {
@@ -186,15 +130,13 @@ void PrintMapByRow(const std::vector<std::array<char, 64>> *map)
         std::cout << std::endl;
     }
 }
-void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, int colIdx)
+void printMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, int colIdx)
 {
-    int printWidth = 29;
+    int printWidth = 25;
     int printHeight = 48;
 
     int startRow = rowIdx - printHeight / 2;
     int startCol = colIdx - printWidth / 2;
-
-    std::string message = "  ";
 
     for (int col = 0; col < printWidth; col++)
     {
@@ -214,38 +156,28 @@ void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
                 switch (map[mapRow][mapCol])
                 {
                 case '0':
-                    std::cout << "\033[30m\033[45m"
-                              << "▒▒"
-                              << "\033[0m";
+                    std::cout << "██";
                     break;
                 case '1':
-                    std::cout << "\033[37m\033[47m"
-                              << "  "
-                              << "\033[0m";
+                    std::cout << "  ";
                     break;
                 case '2':
-                    std::cout << "\033[30m\033[42m"
-                              << "XX"
-                              << "\033[0m";
+                    std::cout << "▒▒";
                     break;
                 case '3':
-                    std::cout << "\033[34m"
-                              << "██"
-                              << "\033[0m";
+                    std::cout << "▓▓";
                     break;
                 case '4':
                     std::cout << "▩ ";
                     break;
                 case '5':
-                    std::cout << "\033[30m\033[47m"
-                              << "▓▓"
-                              << "\033[0m";
+                    std::cout << "☰";
                     break;
                 case '6':
                     std::cout << "☐";
                     break;
                 case '7':
-                    std::cout << "☰";
+                    std::cout << "▓▓";
                     break;
                 case '8':
                     std::cout << "▓▓";
@@ -259,11 +191,10 @@ void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
                 std::cout << "  ";
             }
         }
-        if (col < printWidth - 1)
-            std::cout << std::endl;
+        std::cout << std::endl;
     }
 }
-void AppendMapToFile(const std::string &filename)
+void appendMapToFile(const std::string &filename)
 {
     std::ofstream file(filename, std::ios::app);
     if (file.is_open())
@@ -318,54 +249,27 @@ bool SetPosition(int x, int y)
 
     return SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
-void SetConsoleWindow(int width, int height, int x, int y)
+
+int main(void)
 {
-    HWND console = GetConsoleWindow();
-    RECT r;
-    GetWindowRect(console, &r);
-    MoveWindow(console, x, y, width, height, TRUE);
-}
-bool OpenANSIControlChar()
-{
-    // 开启ANSI转义序列功能
-    HANDLE hStd = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hStd == INVALID_HANDLE_VALUE)
-    {
-        return false;
-    }
-    // 获取控制台模式
-    DWORD dwMode = 0;
-    if (!GetConsoleMode(hStd, &dwMode))
-    {
-        return false;
-    }
-    // 增加控制台模式的选项：启用虚拟终端
-    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    if (!SetConsoleMode(hStd, dwMode))
-    {
-        return false;
-    }
-    return true;
-}
-void InitTestEnv()
-{
+    // 全局帧数计数器
+    unsigned long long int frameCount = 0;
+    FrameRateController FPS;
+
     // 关闭IO同步
     std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-    std::cout.tie(nullptr);
+    std::cin.tie(0);
+    std::cout.tie(0);
 
-    system("mode con cols=96 lines=30");
+    system("mode con cols=96 lines=27");
 
     // 定义窗口句柄变量,包括窗口句柄,标准输出句柄等
-    hwnd = GetConsoleWindow();
-    hOutStd = GetStdHandle(STD_OUTPUT_HANDLE);
+    HWND hwnd = GetConsoleWindow();
+    HANDLE StdOutH = GetStdHandle(STD_OUTPUT_HANDLE);
 
     // 代码页设置为UTF-8,增加对特殊字符的支持
     SetConsoleOutputCP(65001);
     SetConsoleCP(65001);
-
-    // 开启ANSI转义序列功能
-    OpenANSIControlChar();
 
     // 窗口置顶
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_DRAWFRAME);
@@ -375,91 +279,44 @@ void InitTestEnv()
     GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cur_info);
     cur_info.bVisible = FALSE;
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cur_info);
-}
-int main(void)
-{
-    InitTestEnv();
-    // 全局帧数计数器
-    unsigned long long int frameCount = 0;
-    FrameRateController FPS;
 
     // 创建地图
     std::vector<std::array<char, 64>> map;
     int rolindex = 1;
     int colindex = 1;
-    char playerstate = 's';
     readMapFromFile(map, "map.txt");
 
-    // 循环非阻塞读取键盘输入,对awsd等按键进行响应,改变相应的地图索引值
+    // 写一个循环,循环中非阻塞读取键盘输入,然后使用switch对awsd四个按键进行响应,即改变相应的地图索引值
     for (frameCount = 0; true; frameCount++)
     {
         FPS.resetStartTime();
-        if (frameCount % 2 == 0)
+        if (frameCount % 20 == 0)
         {
-            if (GetAsyncKeyState('W') & 0x8000) // 检查W键是否被按下，并且地图数据中相应位置为1
+            if ((GetAsyncKeyState('W') & 0x8000) && map[rolindex][colindex - 1] == '1') // 检查W键是否被按下,并且地图数据中相应位置为1
             {
-                if (map[rolindex][colindex - 1] == '1')
-                {
-                    colindex--;
-                }
-                playerstate = 'w';
+                colindex--;
             }
-            if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下，并且地图数据中相应位置为1
+            if (GetAsyncKeyState('S') & 0x8000 && map[rolindex][colindex + 1] == '1') // 检查S键是否被按下
             {
-                if (map[rolindex][colindex + 1] == '1')
-                {
-                    colindex++;
-                }
-                playerstate = 's';
+                colindex++;
             }
-            if (GetAsyncKeyState('A') & 0x8000) // 检查A键是否被按下，并且地图数据中相应位置为1
+            if (GetAsyncKeyState('A') & 0x8000 && map[rolindex - 1][colindex] == '1') // 检查A键是否被按下
             {
-                if (map[rolindex - 1][colindex] == '1')
-                {
-                    rolindex--;
-                }
-                playerstate = 'a';
+                rolindex--;
             }
-            if (GetAsyncKeyState('D') & 0x8000) // 检查D键是否被按下，并且地图数据中相应位置为1
+            if (GetAsyncKeyState('D') & 0x8000 && map[rolindex + 1][colindex] == '1') // 检查D键是否被按下
             {
-                if (map[rolindex + 1][colindex] == '1')
-                {
-                    rolindex++;
-                }
-                playerstate = 'd';
-            }
-            if (GetAsyncKeyState('J') & 0x8000) // 检查上键是否被按下
-            {
-                switch (playerstate)
-                {
-                case 'a':
-                    map[rolindex - 1][colindex] = '1';
-                    break;
-                case 'd':
-                    map[rolindex + 1][colindex] = '1';
-                    break;
-                case 'w':
-                    map[rolindex][colindex - 1] = '1';
-                    break;
-                case 's':
-                    map[rolindex][colindex + 1] = '1';
-                    break;
-                default:
-                    break;
-                }
-            }
-            if (GetAsyncKeyState('Q') & 0x8000) // 检查1键是否被按下
-            {
-                break;
+                rolindex++;
             }
         }
         SetPosition(0, 1);
-        PrintMapByRange(map, rolindex, colindex);
+        printMapByRange(map, rolindex, colindex);
         std::cout.flush();
         SetPosition(40, 0);
         std::cout << "Frame: " << frameCount;
         std::cout.flush();
-        FPS.printFps();
+        if (frameCount % 50 == 0)
+            FPS.printFps();
     }
     int num = map.size();
     std::cout << num << std::endl;
