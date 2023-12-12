@@ -1,12 +1,7 @@
 // BASICINTERFACE 6Gen1 - 基本接口工程第六代
 // Ver 6.1.0 - preRelease
 // 2020.08.28 - 2020.09.17 - 2021.09.27 - 2023.05.23 - 2023.12.09
-// (6.1.0 - preRelease - 120921P1):更新了图形显示函数,在基本不损失性能的前提下实现彩色字符输出
-// (6.1.0 - preRelease - 121014P1):更新了新的菜单主界面和logo
-// (6.1.0 - preRelease - 121022P1):开始编写终端窗口类
-// (6.1.0 - preRelease - 1211XXP1):尝试使用PDCurses库重写图形程序,新的源代码已经移至PDCurses分支
-// (6.1.0 - preRelease - 121121P1):新增了FPS日志输出,用以检测程序性能
-// (6.1.0 - preRelease - 121201P1):重写了windowDisplay类，实现在子窗口中输出文本的功能
+
 #include "BSIF.h"
 
 class FrameRateController
@@ -26,6 +21,10 @@ public:
         fps = 1000.0 / (timeDiff * 1000);
         return fps;
     }
+    double getFpsValue()
+    {
+        return fps;
+    }
     void printFps()
     {
         uselesscir = 0;
@@ -39,7 +38,6 @@ public:
         }
         std::cout << "\tFPS: " << fps << "  "
                   << "uselessCirPerFrame:" << uselesscir << " ";
-        std::cout << std::endl;
     }
     void resetStartTime()
     {
@@ -107,6 +105,8 @@ private:
     int windowHeight;                // 窗口高度
     int windowX;                     // 内窗口起始X坐标
     int windowY;                     // 内窗口起始Y坐标
+    int foregroundColor;             // 前景色
+    int backgroundColor;             // 背景色
 public:
     void init_Window_Str()
     {
@@ -117,7 +117,7 @@ public:
             window.push_back("");
         }
     }
-    void cui_printin_text(int x, int y, const std::string &text)
+    void put_In_Text(int x, int y, const std::string &text)
     {
         int row = y;
         int col = x;
@@ -129,7 +129,8 @@ public:
                 row++;
             }
             if (row >= windowWidth)
-            { // 如果超出窗口高度，结束输出
+            {
+                // 如果超出窗口高度，结束输出
                 break;
             }
             window[row] += c;
@@ -140,6 +141,7 @@ public:
     void display_Window_Str()
     {
         int row = 0;
+        SetColor(foregroundColor, backgroundColor);
         for (const std::string &line : window)
         {
 
@@ -148,34 +150,39 @@ public:
             std::cout.flush();
             row++;
         }
-        
+        SetColor(7, 0);
         init_Window_Str();
     }
-    void cui_basic_fill(int x, int y, int lenth, int height, char ch)
+    void cui_basic_fill(char ch)
     {
         COORD position{};
-        position.X = x;
-        position.Y = y;
-        for (int h = 1; h <= height; h++)
+        position.X = windowX + 1;
+        position.Y = windowY + 1;
+        SetColor(foregroundColor, backgroundColor);
+        for (int h = 1; h <= windowHeight; h++)
         {
-            position.Y = y + h - 1;
-            SetPosition(x, position.Y);
-            for (int l = 0; l <= lenth - 1; l++)
+            position.Y = windowY + h - 1;
+            SetPosition(windowX, position.Y);
+            for (int l = 0; l <= windowWidth - 1; l++)
                 std::cout << ch;
             std::cout.flush();
         }
+        SetColor(7, 0);
     }
-    void init_new_window(int x, int y, int lenth, int height)
+    void init_new_window(int x, int y, int lenth, int height, int foreColor, int backColor)
     {
         windowWidth = lenth - 2;
         windowHeight = height - 2;
         windowX = x + 1;
         windowY = y + 1;
+        foregroundColor = foreColor;
+        backgroundColor = backColor;
 
         COORD position{};
         position.X = x;
         position.Y = y;
 
+        SetColor(foregroundColor, backgroundColor);
         SetPosition(x + 1, y);
         for (int i = 1; i < lenth - 1; i++)
             std::cout << "━";
@@ -214,6 +221,7 @@ public:
         std::cout.flush();
         SetPosition(x + lenth - 1, y + height - 1);
         std::cout << "┛";
+        SetColor(7, 0);
         std::cout.flush();
         init_Window_Str();
     }
@@ -250,6 +258,197 @@ public:
             std::cout.flush();
         }
         std::cout << "\033[0m";
+    }
+};
+class Entity
+{
+private:
+    int id;
+    std::string name;
+    int hp;
+    int sp;
+    int x;
+    int y;
+
+public:
+    Entity(int id, const std::string &name, int x, int y) : id(id), name(name), hp(100), sp(100), x(x), y(y) {}
+    int getId() const
+    {
+        return id;
+    }
+    std::string getName() const
+    {
+        return name;
+    }
+    int getHp() const
+    {
+        return hp;
+    }
+    int getSp() const
+    {
+        return sp;
+    }
+    int getX() const
+    {
+        return x;
+    }
+    int getY() const
+    {
+        return y;
+    }
+    void setHp(int newHp)
+    {
+        hp = newHp;
+    }
+    void setSp(int newSp)
+    {
+        sp = newSp;
+    }
+};
+class EntityManager
+{
+private:
+    std::vector<Entity> entities;
+
+public:
+    void addEntity(int id, const std::string &name, int x, int y)
+    {
+        Entity entity(id, name, x, y);
+        entities.push_back(entity);
+    }
+
+    Entity *getEntityByName(const std::string &name)
+    {
+        for (auto &entity : entities)
+        {
+            if (entity.getName() == name)
+            {
+                return &entity;
+            }
+        }
+        return nullptr;
+    }
+};
+struct VirtualObject
+{
+    int x;
+    int y;
+    int lx;
+    int ly;
+    int dir;
+    int att;
+    int speed;
+    int len;
+    int exist;
+    int attribute;
+};
+class VirtualObjectManager
+{
+private:
+    static const int MAX_OBJECTS = 100; // 最大虚拟体数量
+    VirtualObject objects[MAX_OBJECTS]; // 虚拟体数组
+public:
+    VirtualObjectManager()
+    {
+        for (int i = 0; i < MAX_OBJECTS; i++)
+        {
+            objects[i].exist = 0; // 初始化所有节点的 exist 为 0
+        }
+    }
+    // 添加新的虚拟体
+    void addObject(int x, int y)
+    {
+        int index = findEmptyIndex(); // 查找空闲节点的索引
+        if (index != -1)
+        {
+            VirtualObject &object = objects[index];
+            object.x = x;
+            object.y = y;
+            object.exist = 1; // 设置 exist 为 1，表示有数据
+        }
+    }
+    // 销毁虚拟体
+    void destroyObject(int index)
+    {
+        if (index >= 0 && index < MAX_OBJECTS)
+        {
+            objects[index].exist = 0; // 设置 exist 为 0，表示无数据
+        }
+    }
+
+    // 根据索引获取虚拟体
+    VirtualObject *getObjectByIndex(int index)
+    {
+        if (index >= 0 && index < MAX_OBJECTS && objects[index].exist == 1)
+        {
+            return &objects[index];
+        }
+        return nullptr;
+    }
+    // 更新虚拟体的字段值
+    void updateObjectField(int index, const std::string &fieldName, int newValue)
+    {
+        if (index >= 0 && index < MAX_OBJECTS && objects[index].exist == 1)
+        {
+            VirtualObject &object = objects[index];
+            if (fieldName == "x")
+            {
+                object.x = newValue;
+            }
+            else if (fieldName == "y")
+            {
+                object.y = newValue;
+            }
+            else if (fieldName == "lx")
+            {
+                object.lx = newValue;
+            }
+            else if (fieldName == "ly")
+            {
+                object.ly = newValue;
+            }
+            else if (fieldName == "dir")
+            {
+                object.dir = newValue;
+            }
+            else if (fieldName == "att")
+            {
+                object.att = newValue;
+            }
+            else if (fieldName == "speed")
+            {
+                object.speed = newValue;
+            }
+            else if (fieldName == "len")
+            {
+                object.len = newValue;
+            }
+            else if (fieldName == "exist")
+            {
+                object.exist = newValue;
+            }
+            else if (fieldName == "attribute")
+            {
+                object.attribute = newValue;
+            }
+            else
+            {
+                std::cout << "Invalid field name." << std::endl;
+            }
+        }
+    }
+private:
+    // 查找空闲节点的索引
+    int findEmptyIndex()
+    {
+        for (int i = 0; i < MAX_OBJECTS; i++)
+        {
+            if (objects[i].exist == 0)
+            {
+                return i;
+            }
+        }
+        return -1; // 没有空闲节点
     }
 };
 void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &filename)
@@ -356,8 +555,6 @@ void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
     int startRow = rowIdx - printHeight / 2;
     int startCol = colIdx - printWidth / 2;
 
-    std::string message = "  ";
-
     for (int col = 0; col < printWidth; col++)
     {
         for (int row = 0; row < printHeight; row++)
@@ -368,7 +565,9 @@ void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
             // 中央索引坐标打印X
             if (mapRow == rowIdx && mapCol == colIdx)
             {
-                std::cout << "☯ ";
+                std::cout << "\033[30m\033[47m"
+                          << "☯ "
+                          << "\033[0m";
             }
             else if (mapRow >= 0 && mapRow < map.size() && mapCol >= 0 && mapCol < 64)
             {
@@ -383,8 +582,7 @@ void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
                 case '1':
                     std::cout << "\033[37m\033[47m"
                               << "  "
-                              << "\033[0m"
-                              ;
+                              << "\033[0m";
                     break;
                 case '2':
                     std::cout << "\033[30m\033[42m"
@@ -530,7 +728,6 @@ bool OpenANSIControlChar()
 }
 void InitTestEnv()
 {
-    //setbuf(stdout,NULL);
     system("cls");
     // 关闭IO同步
     std::ios::sync_with_stdio(false);
@@ -562,14 +759,19 @@ int CoreCircle(void)
     readMapFromFile(map, "map.txt");
     WindowDisplay infowindow;
 
+    infowindow.init_new_window(96, 1, 30, 29, 0x0, 0xb);
+    infowindow.cui_basic_fill(' ');
+
     // 核心循环,循环中非阻塞读取键盘输入,然后使用switch对awsd四个按键进行响应,即改变相应的地图索引值
     for (frameCount = 0; true; frameCount++)
-    {   FPS.resetStartTime();
-        // infowindow.init_new_window(97, 1, 28, 20);
-        // infowindow.cui_printin_text(0, 0, "|frame:" + std::to_string(frameCount));
-        // infowindow.cui_printin_text(0, 1, "|AAAFramePerSecond:" + std::to_string(FPS.getFps()));
-        // infowindow.display_Window_Str();
-
+    {
+        FPS.resetStartTime();
+        infowindow.put_In_Text(0, 0, "|frame:" + std::to_string(frameCount) + " ");
+        infowindow.put_In_Text(0, 1, "|FPS:" + std::to_string(FPS.getFpsValue()) + " ");
+        infowindow.put_In_Text(0, 3, "|playerstate:" + std::to_string(playerstate) + " ");
+        infowindow.put_In_Text(0, 4, "|rolindex:" + std::to_string(rolindex) + " ");
+        infowindow.put_In_Text(0, 5, "|colindex:" + std::to_string(colindex) + " ");
+        infowindow.display_Window_Str();
         if (frameCount % 2 == 0)
         {
             if (GetAsyncKeyState('W') & 0x8000) // 检查W键是否被按下，并且地图数据中相应位置为1
@@ -674,10 +876,11 @@ void InitMainDrive(void)
     // std::string command = "mode con cols=" + std::to_string(cols) + " lines=" + std::to_string(lines);
     // system(command.c_str());
 
-    SMALL_RECT windowSize = {0, 0, WIN_MENU_LONAXIS - 1, WIN_MENU_HORAXIS - 2};
-    SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &windowSize);
-    COORD bufferSize = {WIN_MENU_LONAXIS, WIN_MENU_HORAXIS - 1};
-    SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), bufferSize);
+    // SMALL_RECT windowSize = {0, 0, WIN_MENU_LONAXIS - 1, WIN_MENU_HORAXIS - 2};
+    // SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &windowSize);
+    // COORD bufferSize = {WIN_MENU_LONAXIS, WIN_MENU_HORAXIS - 1};
+    // SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), bufferSize);
+
     // 窗口置顶
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_DRAWFRAME);
 
@@ -687,10 +890,8 @@ void InitMainDrive(void)
 }
 int main(void)
 {
-    Sleep(50);
-
-printMenu_:
     InitMainDrive();
+printMenu_:
     for (int index = 1; index < 13; index++)
     {
         SetPosition(1, index);
@@ -769,24 +970,17 @@ printMenu_:
         }
         if (GetAsyncKeyState('2') & 0x8000) // 检查S键是否被按下，并且地图数据中相应位置为1
         {
-            MessageBoxA(GetConsoleWindow(), "Copyright 2023 Zhou Xu.All rights reserved.", (VERSION_TXT), MB_OK | MB_ICONASTERISK);
+            MessageBoxExA(GetConsoleWindow(), "Copyright 2023 Zhou Xu.All rights reserved.", (VERSION_TXT), MB_OK | MB_ICONASTERISK | MB_TOPMOST, 0);
             continue;
         }
         if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下，并且地图数据
         {
             WindowDisplay setWindow;
 
-            setWindow.init_new_window(10, 10, 35, 8);
-            setWindow.cui_basic_fill(11, 11, 33, 6, ' ');
-            // setWindow.cui_noboundary_window(10, 1, 20, 8);
-
-            SetPosition(12, 12);
-            SetColor(4, 0);
-            COORD color = GetColor();
-            std::cout << "颜色: " << color.X << " " << color.Y << std::endl;
-            SetPosition(12, 13);
-            std::cout << "设置" << std::endl;
-            SetColor(7, 0);
+            setWindow.init_new_window(10, 10, 35, 8, 0x0, 0xb);
+            setWindow.cui_basic_fill(' ');
+            setWindow.put_In_Text(0, 0, "测试");
+            setWindow.display_Window_Str();
             continue;
         }
         if (GetAsyncKeyState('Q') & 0x8000) // 检查S键是否被按下

@@ -1,4 +1,4 @@
-#define VERSION_TXT " 6.1.0 - PRE - 121201P1 "
+#define VERSION_TXT " 6.1.0 - PRE - 121223P1 "
 #include <windows.h>
 #include <vector>
 #include <array>
@@ -30,3 +30,13 @@ void InitTestEnv();
 int CoreCircle(void);
 void InitMainDrive(void);
 void InitMainDrive(void);
+
+// (6.1.0 - preRelease - 120921P1):更新了图形显示函数,在基本不损失性能的前提下实现彩色字符输出
+// (6.1.0 - preRelease - 121014P1):更新了新的菜单主界面和logo
+// (6.1.0 - preRelease - 121022P1):开始编写终端窗口类
+// (6.1.0 - preRelease - 121120P1):尝试使用PDCurses库重写图形程序,新的源代码已经移至PDCurses分支
+// (6.1.0 - preRelease - 121121P1):新增了FPS日志输出,用以检测程序性能
+// (6.1.0 - preRelease - 121201P1):重写了windowDisplay类，实现在子窗口中输出文本的功能
+// (6.1.0 - preRelease - 121220P1):继续完善windowDisplay类，实现了子窗口的背景色
+// (6.1.0 - preRelease - 121220P2):已定位BFX-2023-1212C1-N:终端内运行时菜单窗口的显示出现问题,原因时终端对窗口缓冲区的API响应存在问题
+// (6.1.0 - preRelease - 121223P1):新增了实体类和虚拟体类
