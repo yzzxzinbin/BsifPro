@@ -271,7 +271,6 @@ private:
     int y;
 
 public:
-    Entity(int id, const std::string &name, int x, int y) : id(id), name(name), hp(100), sp(100), x(x), y(y) {}
     int getId() const
     {
         return id;
@@ -304,6 +303,22 @@ public:
     {
         sp = newSp;
     }
+    void setName(const std::string &newName)
+    {
+        name = newName;
+    }
+    void setX(int newX)
+    {
+        x = newX;
+    }
+    void setY(int newY)
+    {
+        y = newY;
+    }
+    void setId(int newId)
+    {
+        id = newId;
+    }
 };
 class EntityManager
 {
@@ -311,9 +326,17 @@ private:
     std::vector<Entity> entities;
 
 public:
-    void addEntity(int id, const std::string &name, int x, int y)
+    void addEntity(const std::string &name,int id,  int x, int y, int hp, int sp)
     {
-        Entity entity(id, name, x, y);
+        // Entity entity(id, name, x, y);
+        // 使用对应函数初始化值
+        Entity entity;
+        entity.setId(id);
+        entity.setName(name);
+        entity.setX(x);
+        entity.setY(y);
+        entity.setHp(hp);
+        entity.setSp(sp);
         entities.push_back(entity);
     }
 
@@ -327,6 +350,79 @@ public:
             }
         }
         return nullptr;
+    }
+
+public:
+    // 从文件中读取实体数据
+    bool readEntitiesFromFile(const std::string &filename)
+    {
+        std::ofstream loginfo;
+        loginfo.open("loginfo.txt", std::ios::app);
+        std::ifstream file(filename);
+        if (!file.is_open())
+        {
+            loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            return false;
+        }
+
+        std::string line;
+        while (std::getline(file, line))
+        {
+            std::vector<std::string> tokens = split(line, ',');
+            if (tokens.size() == 6)
+            {
+                Entity entity;
+                entity.setName(tokens[0]);
+                entity.setId(std::stoi(tokens[1]));
+                entity.setHp(std::stoi(tokens[2]));
+                entity.setSp(std::stoi(tokens[3]));
+                entity.setX(std::stoi(tokens[4]));
+                entity.setY(std::stoi(tokens[5]));
+                entities.push_back(entity);
+            }
+            else
+            {
+                std::cout << "Invalid line: " << line << std::endl;
+            }
+        }
+
+        file.close();
+        return true;
+    }
+
+    // 将实体数据写入文件
+    bool writeEntitiesToFile(const std::string &filename)
+    {
+        std::ofstream loginfo;
+        loginfo.open("loginfo.txt", std::ios::app);
+        std::ofstream file(filename);
+        if (!file.is_open())
+        {
+            loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            return false;
+        }
+
+        for (const Entity &entity : entities)
+        {
+            file << entity.getName() << "," << entity.getId() << ","
+                 << entity.getHp() << "," << entity.getSp() << "," << entity.getX() << "," << entity.getY() << std::endl;
+        }
+
+        file.close();
+        return true;
+    }
+
+private:
+    std::vector<std::string> split(const std::string &str, char delimiter)
+    {
+        std::vector<std::string> tokens;
+        std::string token;
+        std::istringstream tokenStream(str);
+        while (std::getline(tokenStream, token, delimiter))
+        {
+            tokens.push_back(token);
+        }
+        return tokens;
     }
 };
 struct VirtualObject
@@ -437,6 +533,7 @@ public:
             }
         }
     }
+
 private:
     // 查找空闲节点的索引
     int findEmptyIndex()
@@ -450,9 +547,116 @@ private:
         }
         return -1; // 没有空闲节点
     }
+
+public:
+    // 从文件中读取虚拟体数据
+    bool readVirtualObjectsFromFile(const std::string &filename)
+    {
+        std::ofstream loginfo;
+        loginfo.open("loginfo.txt", std::ios::app);
+        std::ifstream file(filename);
+        if (!file.is_open())
+        {
+            loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            return false;
+        }
+
+        std::string line;
+        int index = 0;
+        while (std::getline(file, line))
+        {
+            std::vector<std::string> fields = split(line, ',');
+            if (fields.size() != 10)
+            {
+                loginfo << formatTime(time(nullptr)) << "Invalid data format in file: " << filename << std::endl;
+                return false;
+            }
+
+            VirtualObject &object = objects[index];
+            object.x = std::stoi(fields[0]);
+            object.y = std::stoi(fields[1]);
+            object.lx = std::stoi(fields[2]);
+            object.ly = std::stoi(fields[3]);
+            object.dir = std::stoi(fields[4]);
+            object.att = std::stoi(fields[5]);
+            object.speed = std::stoi(fields[6]);
+            object.len = std::stoi(fields[7]);
+            object.exist = std::stoi(fields[8]);
+            object.attribute = std::stoi(fields[9]);
+
+            index++;
+            if (index >= MAX_OBJECTS)
+            {
+                break;
+            }
+        }
+
+        file.close();
+        return true;
+    }
+
+    // 将虚拟体数据写入文件
+    bool writeVirtualObjectsToFile(const std::string &filename)
+    {
+        std::ofstream loginfo;
+        loginfo.open("loginfo.txt", std::ios::app);
+        std::ofstream file(filename);
+        if (!file.is_open())
+        {
+            loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            return false;
+        }
+
+        for (int i = 0; i < MAX_OBJECTS; i++)
+        {
+            const VirtualObject &object = objects[i];
+            file << object.x << "," << object.y << ","
+                 << object.lx << "," << object.ly << ","
+                 << object.dir << "," << object.att << ","
+                 << object.speed << "," << object.len << ","
+                 << object.exist << "," << object.attribute << std::endl;
+        }
+
+        file.close();
+        return true;
+    }
+
+private:
+    std::vector<std::string> split(const std::string &str, char delimiter)
+    {
+        std::vector<std::string> tokens;
+        std::string token;
+        std::istringstream tokenStream(str);
+        while (std::getline(tokenStream, token, delimiter))
+        {
+            tokens.push_back(token);
+        }
+        return tokens;
+    }
 };
+std::string formatTime(time_t time)
+{
+    // 将时间转换为结构体
+    struct tm* timeinfo;
+    timeinfo = localtime(&time);
+
+    // 使用stringstream来格式化时间
+    std::stringstream ss;
+    ss << (timeinfo->tm_year + 1900) << "."; // 年份需要加上1900
+    ss << (timeinfo->tm_mon + 1) << ".";
+    ss << timeinfo->tm_mday << " ";
+    ss << timeinfo->tm_hour << ":";
+    ss << timeinfo->tm_min << ":";
+    ss << timeinfo->tm_sec;
+    ss << "  |";
+
+    // 返回格式化后的时间字符串
+    return ss.str();
+}
 void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &filename)
 {
+    std::ofstream loginfo;
+    loginfo.open("loginfo.txt", std::ios::app);
     std::ifstream file(filename);
     if (file.is_open())
     {
@@ -461,7 +665,7 @@ void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &
         {
             if (line.size() != 64)
             {
-                std::cout << "Invalid line size: " << line.size() << std::endl;
+                loginfo << formatTime(time(nullptr)) << "Invalid line size: " << line.size() << std::endl;
                 continue;
             }
             std::array<char, 64> row;
@@ -472,17 +676,19 @@ void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &
             map.push_back(row);
         }
         file.close();
-        std::cout << "Map read from file successfully.";
+        loginfo << formatTime(time(nullptr)) << "Map read from file successfully."<< std::endl;
         std::cout.flush();
     }
     else
     {
-        std::cout << "Failed to open file: " << filename;
+        loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename;
         std::cout.flush();
     }
 }
 void writeMapToFile(const std::vector<std::array<char, 64>> &map, const std::string &filename)
 {
+            std::ofstream loginfo;
+        loginfo.open("loginfo.txt", std::ios::app);
     std::ofstream file(filename);
     if (file.is_open())
     {
@@ -495,13 +701,14 @@ void writeMapToFile(const std::vector<std::array<char, 64>> &map, const std::str
             file << std::endl;
         }
         file.close();
-        std::cout << "Map written to file successfully." << std::endl;
+        loginfo << formatTime(time(nullptr)) << "Map written to file successfully." << std::endl;
     }
     else
     {
-        std::cout << "Failed to open file: " << filename << std::endl;
+        loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
     }
 }
+
 void SetColor(UINT uFore, UINT uBack)
 {
     std::cout.flush();
@@ -628,6 +835,8 @@ void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
 }
 void AppendMapToFile(const std::string &filename)
 {
+            std::ofstream loginfo;
+        loginfo.open("loginfo.txt", std::ios::app);
     std::ofstream file(filename, std::ios::app);
     if (file.is_open())
     {
@@ -662,7 +871,7 @@ void AppendMapToFile(const std::string &filename)
     }
     else
     {
-        std::cout << "Failed to open file: " << filename << std::endl;
+        loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
     }
 }
 bool SetPosition(int x, int y)
@@ -753,10 +962,17 @@ int CoreCircle(void)
 
     // 创建地图
     std::vector<std::array<char, 64>> map;
+    readMapFromFile(map, "map.txt");
+    // 读取虚拟体和实体数据
+    EntityManager em;
+    VirtualObjectManager vom;
+    em.readEntitiesFromFile("entities.txt");
+    vom.readVirtualObjectsFromFile("virtualobjects.txt");
+    em.addEntity("player",0002,2,2,1,1);
     int rolindex = 1;
     int colindex = 1;
     char playerstate = 's';
-    readMapFromFile(map, "map.txt");
+
     WindowDisplay infowindow;
 
     infowindow.init_new_window(96, 1, 30, 29, 0x0, 0xb);
@@ -845,6 +1061,7 @@ int CoreCircle(void)
     std::cout << num << std::endl;
 
     writeMapToFile(map, "map.txt");
+    em.writeEntitiesToFile("entities.txt");
     fpsdata.close();
     system("pause");
     return 0;
