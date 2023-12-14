@@ -1,4 +1,4 @@
-#define VERSION_TXT " 6.1.0 - PRE - 121400P1 "
+#define VERSION_TXT " 6.1.1 - PRE - 121400P1 "
 #include <windows.h>
 #include <vector>
 #include <array>
@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <ctime>
 
-#define FPSLIMIT 120
+#define FPSLIMIT 60
 #define WIN_MENU_LONAXIS 64 // 横长
 #define WIN_MENU_HORAXIS 25 // 纵长
 HANDLE hOutStd;
@@ -16,8 +16,8 @@ HWND hwnd;
 bool is_esc_permitted = true;
 
 std::string formatTime(time_t time);
-void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &filename);
-void writeMapToFile(const std::vector<std::array<char, 64>> &map, const std::string &filename);
+void readMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename);
+void writeMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename);
 void SetColor(UINT uFore, UINT uBack);
 void PrintMapByCol(const std::vector<std::array<char, 64>> *map);
 void PrintMapByRow(const std::vector<std::array<char, 64>> *map);
@@ -31,7 +31,9 @@ int CoreCircle(void);
 void InitMainDrive(void);
 void InitMainDrive(void);
 
-// (6.1.0 - preRelease - 120921P1):更新显示函数,基本不损失性能的前提下实现彩色字符输出
+//------------ BSIF 6 起步版本 --------------
+//该版本主要使用STL编写图像显示工具和工程基本数据结构类
+// (6.1.0 - preRelease - 120921P1):更新移动图形显示函数,基本不损失性能的前提下实现彩色字符输出
 // (6.1.0 - preRelease - 121014P1):更新新的菜单主界面和logo
 // (6.1.0 - preRelease - 121022P1):开始编写终端窗口类
 // (6.1.0 - preRelease - 121120P1):尝试使用PDCurses库重写图形程序,新的源代码已经移至PDCurses分支
@@ -42,3 +44,9 @@ void InitMainDrive(void);
 // (6.1.0 - preRelease - 121223P1):新增了实体类和虚拟体类
 // (6.1.0 - preRelease - 121323P1):完成了实体类和虚拟体类的文件读写模块
 // (6.1.0 - preRelease - 121400P1):新增日志输出流
+//------------ BSIF 6 泡泡堂工程 --------------
+// (6.1.1 - preRelease - 121412P1):修正并完善了行列图形显示函数,为第一个项目泡泡堂作准备
+// (6.1.1 - preRelease - 121417P1):重写地图数据结构为双重嵌套向量,并对相应API函数做出了调整
+// (6.1.1 - preRelease - 121420P1):编译时添加了程序ico,调整了显示参数
+// (6.1.1 - preRelease - 121421P1):编写实体操作逻辑
+// (6.1.1 - preRelease - 121501P1):编写地图编辑工具

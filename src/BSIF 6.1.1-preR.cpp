@@ -1,5 +1,5 @@
 // BASICINTERFACE 6Gen1 - 基本接口工程第六代
-// Ver 6.1.0 - preRelease
+// Ver 6.1.1 - preRelease
 // 2020.08.28 - 2020.09.17 - 2021.09.27 - 2023.05.23 - 2023.12.09
 
 #include "BSIF.h"
@@ -7,7 +7,6 @@
 class FrameRateController
 {
 public:
-    int uselesscir = 0;
     FrameRateController()
     {
         resetStartTime();
@@ -59,10 +58,17 @@ private:
     double timeFreq;
     double timeNow;
     double fps;
+    int uselesscir = 0;
     void getCurrentTime()
     {
         QueryPerformanceCounter(&time_union);
         timeNow = time_union.QuadPart;
+    }
+
+public:
+    int getUselesscir()
+    {
+        return uselesscir;
     }
 };
 class ConsoleStyle
@@ -269,6 +275,7 @@ private:
     int sp;
     int x;
     int y;
+    char status;
 
 public:
     int getId() const
@@ -295,6 +302,10 @@ public:
     {
         return y;
     }
+    char getStatus() const
+    {
+        return status;
+    }
     void setHp(int newHp)
     {
         hp = newHp;
@@ -309,24 +320,48 @@ public:
     }
     void setX(int newX)
     {
+        if (newX == -2)
+        {
+            x--;
+            return;
+        }
+        else if (newX == -1)
+        {
+            x++;
+            return;
+        }
         x = newX;
     }
     void setY(int newY)
     {
+        if (newY == -2)
+        {
+            y--;
+            return;
+        }
+        else if (newY == -1)
+        {
+            y++;
+            return;
+        }
         y = newY;
     }
     void setId(int newId)
     {
         id = newId;
     }
+    void setStatus(char newStatus)
+    {
+        status = newStatus;
+    }
 };
 class EntityManager
 {
-private:
+public:
     std::vector<Entity> entities;
 
 public:
-    void addEntity(const std::string &name,int id,  int x, int y, int hp, int sp)
+    void addEntity(const std::string &name, int id, int x, int y, int hp, int sp, char status)
     {
         // Entity entity(id, name, x, y);
         // 使用对应函数初始化值
@@ -337,6 +372,7 @@ public:
         entity.setY(y);
         entity.setHp(hp);
         entity.setSp(sp);
+        entity.setStatus(status);
         entities.push_back(entity);
     }
 
@@ -369,7 +405,7 @@ public:
         while (std::getline(file, line))
         {
             std::vector<std::string> tokens = split(line, ',');
-            if (tokens.size() == 6)
+            if (tokens.size() == 7)
             {
                 Entity entity;
                 entity.setName(tokens[0]);
@@ -378,6 +414,7 @@ public:
                 entity.setSp(std::stoi(tokens[3]));
                 entity.setX(std::stoi(tokens[4]));
                 entity.setY(std::stoi(tokens[5]));
+                entity.setStatus(tokens[6][0]);
                 entities.push_back(entity);
             }
             else
@@ -405,7 +442,7 @@ public:
         for (const Entity &entity : entities)
         {
             file << entity.getName() << "," << entity.getId() << ","
-                 << entity.getHp() << "," << entity.getSp() << "," << entity.getX() << "," << entity.getY() << std::endl;
+                 << entity.getHp() << "," << entity.getSp() << "," << entity.getX() << "," << entity.getY() << "," << entity.getStatus() << std::endl;
         }
 
         file.close();
@@ -634,10 +671,12 @@ private:
         return tokens;
     }
 };
+EntityManager em;
+VirtualObjectManager vom;
 std::string formatTime(time_t time)
 {
     // 将时间转换为结构体
-    struct tm* timeinfo;
+    struct tm *timeinfo;
     timeinfo = localtime(&time);
 
     // 使用stringstream来格式化时间
@@ -653,7 +692,7 @@ std::string formatTime(time_t time)
     // 返回格式化后的时间字符串
     return ss.str();
 }
-void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &filename)
+void readMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename)
 {
     std::ofstream loginfo;
     loginfo.open("loginfo.txt", std::ios::app);
@@ -663,32 +702,34 @@ void readMapFromFile(std::vector<std::array<char, 64>> &map, const std::string &
         std::string line;
         while (std::getline(file, line))
         {
-            if (line.size() != 64)
+            std::vector<char> row;
+            for (size_t i = 0; i < line.size(); i++)
             {
-                loginfo << formatTime(time(nullptr)) << "Invalid line size: " << line.size() << std::endl;
-                continue;
-            }
-            std::array<char, 64> row;
-            for (size_t i = 0; i < 64; i++)
-            {
-                row[i] = line[i];
+                // if (line[i] == '0')
+                // {
+                //     line[i] = '1';
+                // }
+                // else if (line[i] == '1')
+                // {
+                //     line[i] = '0';
+                // }
+                row.push_back(line[i]);
             }
             map.push_back(row);
         }
         file.close();
-        loginfo << formatTime(time(nullptr)) << "Map read from file successfully."<< std::endl;
-        std::cout.flush();
+        loginfo << formatTime(time(nullptr)) << "Map read from file successfully." << std::endl;
     }
     else
     {
         loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename;
-        std::cout.flush();
     }
 }
-void writeMapToFile(const std::vector<std::array<char, 64>> &map, const std::string &filename)
+
+void writeMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename)
 {
-            std::ofstream loginfo;
-        loginfo.open("loginfo.txt", std::ios::app);
+    std::ofstream loginfo;
+    loginfo.open("loginfo.txt", std::ios::app);
     std::ofstream file(filename);
     if (file.is_open())
     {
@@ -708,7 +749,6 @@ void writeMapToFile(const std::vector<std::array<char, 64>> &map, const std::str
         loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
     }
 }
-
 void SetColor(UINT uFore, UINT uBack)
 {
     std::cout.flush();
@@ -729,32 +769,86 @@ COORD GetColor(void)
     color.Y = backgroundColor;
     return color;
 }
-void PrintMapByCol(const std::vector<std::array<char, 64>> *map)
+void PrintMapByCol(const std::vector<std::vector<char>> *map)
 {
     for (const auto &row : (*map))
     {
-        static int index = 0;
-        std::cout << "line:" << index << " ";
         for (const auto &element : row)
         {
             std::cout << element;
         }
         std::cout << std::endl;
-        index++;
     }
 }
-void PrintMapByRow(const std::vector<std::array<char, 64>> *map)
+void PrintMapByRow(const std::vector<std::vector<char>> *map)
 {
-    for (size_t col = 0; col < 64; col++)
+    for (size_t col = 0; col < map->at(0).size(); col++)
     {
         for (size_t row = 0; row < map->size(); row++)
         {
-            std::cout << (*map)[row][col];
+            for (const Entity &entity : em.entities)
+            {
+                if (entity.getName() == "player1" && entity.getY() == col && entity.getX() == row)
+                {
+                    std::cout << "\033[30m\033[47m"
+                              << "☯ "
+                              << "\033[0m";
+                    goto nomapout;
+                }
+                if (entity.getName() == "player2" && entity.getY() == col && entity.getX() == row)
+                {
+                    std::cout << "\033[30m\033[43m"
+                              << "☯ "
+                              << "\033[0m";
+                    goto nomapout;
+                }
+            }
+            switch ((*map)[row][col])
+            {
+            case '0':
+                std::cout << "\033[37m\033[47m"
+                          << "  "
+                          << "\033[0m";
+                break;
+            case '1':
+                std::cout << "\033[35m\033[45m"
+                          << "▒▒"
+                          << "\033[0m";
+                break;
+            case '2':
+                std::cout << "\033[30m\033[42m"
+                          << "╬╬"
+                          << "\033[0m";
+                break;
+            case '3':
+                std::cout << "\033[34m"
+                          << "██"
+                          << "\033[0m";
+                break;
+            case '4':
+                std::cout << "📶";
+                break;
+            case '5':
+                std::cout << "\033[30m\033[47m"
+                          << "▓▓"
+                          << "\033[0m";
+                break;
+            case '6':
+                std::cout << "☐";
+                break;
+            case '7':
+                std::cout << "☰";
+                break;
+            default:
+                break;
+            }
+        nomapout:;
         }
-        std::cout << std::endl;
+        if (col != map->at(0).size() - 1)
+            std::cout << std::endl;
     }
 }
-void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, int colIdx)
+void PrintMapByRange(const std::vector<std::vector<char>> &map, int rowIdx, int colIdx)
 {
     int printWidth = 29;
     int printHeight = 48;
@@ -835,8 +929,8 @@ void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, i
 }
 void AppendMapToFile(const std::string &filename)
 {
-            std::ofstream loginfo;
-        loginfo.open("loginfo.txt", std::ios::app);
+    std::ofstream loginfo;
+    loginfo.open("loginfo.txt", std::ios::app);
     std::ofstream file(filename, std::ios::app);
     if (file.is_open())
     {
@@ -935,6 +1029,46 @@ bool OpenANSIControlChar()
     }
     return true;
 }
+int detectMap(const std::vector<std::vector<char>> &map, int x, int y, char status, char symbol)
+{
+
+    while (true)
+    {
+        switch (status)
+        {
+        case 'w':
+            y--;
+            if (map[x][y] != symbol)
+            {
+                return y;
+            }
+            break;
+        case 's':
+            y++;
+            if (map[x][y] != symbol)
+            {
+                return y;
+            }
+            break;
+        case 'a':
+            x--;
+            if (map[x][y] != symbol)
+            {
+                return x;
+            }
+            break;
+        case 'd':
+            x++;
+            if (map[x][y] != symbol)
+            {
+                return x;
+            }
+            break;
+        default:
+            return -1;
+        }
+    }
+}
 void InitTestEnv()
 {
     system("cls");
@@ -961,14 +1095,12 @@ int CoreCircle(void)
     fpsdata.open("fpsdata.txt", std::ios::out | std::ios::trunc);
 
     // 创建地图
-    std::vector<std::array<char, 64>> map;
-    readMapFromFile(map, "map.txt");
+    std::vector<std::vector<char>> map;
+    readMapFromFile(map, "areamap.txt");
     // 读取虚拟体和实体数据
-    EntityManager em;
-    VirtualObjectManager vom;
+
     em.readEntitiesFromFile("entities.txt");
     vom.readVirtualObjectsFromFile("virtualobjects.txt");
-    em.addEntity("player",0002,2,2,1,1);
     int rolindex = 1;
     int colindex = 1;
     char playerstate = 's';
@@ -982,85 +1114,176 @@ int CoreCircle(void)
     for (frameCount = 0; true; frameCount++)
     {
         FPS.resetStartTime();
-        infowindow.put_In_Text(0, 0, "|frame:" + std::to_string(frameCount) + " ");
-        infowindow.put_In_Text(0, 1, "|FPS:" + std::to_string(FPS.getFpsValue()) + " ");
-        infowindow.put_In_Text(0, 3, "|playerstate:" + std::to_string(playerstate) + " ");
-        infowindow.put_In_Text(0, 4, "|rolindex:" + std::to_string(rolindex) + " ");
-        infowindow.put_In_Text(0, 5, "|colindex:" + std::to_string(colindex) + " ");
+        if (frameCount % 20 == 0)
+        {
+            infowindow.put_In_Text(0, 0, "|frame:" + std::to_string(frameCount) + " ");
+            infowindow.put_In_Text(0, 1, "|FPS:" + std::to_string(FPS.getFpsValue()) + " ");
+            infowindow.put_In_Text(0, 2, "|uselesscir:" + std::to_string(FPS.getUselesscir()) + " ");
+            infowindow.put_In_Text(0, 3, "|player1state:" + std::to_string(em.entities[0].getStatus()) + " ");
+            infowindow.put_In_Text(0, 4, "|rolindex:" + std::to_string(rolindex) + " ");
+            infowindow.put_In_Text(0, 5, "|colindex:" + std::to_string(colindex) + " ");
+            infowindow.put_In_Text(0, 6, "|entities:" + std::to_string(em.entities.size()) + " ");
+            infowindow.put_In_Text(0, 7, "|en1x:" + std::to_string(em.entities[0].getX()));
+            infowindow.put_In_Text(0, 8, "|en1y:" + std::to_string(em.entities[0].getY()));
+        }
         infowindow.display_Window_Str();
+
         if (frameCount % 2 == 0)
         {
             if (GetAsyncKeyState('W') & 0x8000) // 检查W键是否被按下，并且地图数据中相应位置为1
             {
-                if (map[rolindex][colindex - 1] == '1')
+                if (map[(em.entities[0].getX())][em.entities[0].getY() - 1] == '0')
                 {
-                    colindex--;
+                    em.entities[0].setY(-2);
                 }
-                playerstate = 'w';
+                em.entities[0].setStatus('w');
             }
             if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下，并且地图数据中相应位置为1
             {
-                if (map[rolindex][colindex + 1] == '1')
+                if ((map[(em.entities[0].getX())][em.entities[0].getY() + 1]) == '0')
                 {
-                    colindex++;
+                    em.entities[0].setY(-1);
                 }
-                playerstate = 's';
+                em.entities[0].setStatus('s');
             }
             if (GetAsyncKeyState('A') & 0x8000) // 检查A键是否被按下，并且地图数据中相应位置为1
             {
-                if (map[rolindex - 1][colindex] == '1')
+                if ((map[(em.entities[0].getX()) - 1][em.entities[0].getY()]) == '0')
                 {
-                    rolindex--;
+                    em.entities[0].setX(-2);
                 }
-                playerstate = 'a';
+                em.entities[0].setStatus('a');
             }
             if (GetAsyncKeyState('D') & 0x8000) // 检查D键是否被按下，并且地图数据中相应位置为1
             {
-                if (map[rolindex + 1][colindex] == '1')
+                if ((map[(em.entities[0].getX()) + 1][(em.entities[0].getY())]) == '0')
                 {
-                    rolindex++;
+                    em.entities[0].setX(-1);
                 }
-                playerstate = 'd';
+                em.entities[0].setStatus('d');
             }
             if (GetAsyncKeyState('J') & 0x8000) // 检查J键是否被按下
             {
-                switch (playerstate)
+                switch (em.entities[0].getStatus())
                 {
                 case 'a':
-                    map[rolindex - 1][colindex] = '1';
+                    if (map[(em.entities[0].getX()) - 1][em.entities[0].getY()] != '2')
+                        map[(em.entities[0].getX()) - 1][em.entities[0].getY()] = '0';
                     break;
                 case 'd':
-                    map[rolindex + 1][colindex] = '1';
+                    if (map[(em.entities[0].getX()) + 1][em.entities[0].getY()] != '2')
+                        map[(em.entities[0].getX()) + 1][em.entities[0].getY()] = '0';
                     break;
                 case 'w':
-                    map[rolindex][colindex - 1] = '1';
+                    if (map[(em.entities[0].getX())][em.entities[0].getY() - 1] != '2')
+                        map[(em.entities[0].getX())][em.entities[0].getY() - 1] = '0';
                     break;
                 case 's':
-                    map[rolindex][colindex + 1] = '1';
+                    if (map[(em.entities[0].getX())][em.entities[0].getY() + 1] != '2')
+                        map[(em.entities[0].getX())][em.entities[0].getY() + 1] = '0';
                     break;
                 default:
                     break;
                 }
             }
-            if (GetAsyncKeyState('Q') & 0x8000) // 检查1键是否被按下
+            if (GetAsyncKeyState(VK_UP) & 0x8000)
+            {
+                if (map[(em.entities[1].getX())][em.entities[1].getY() - 1] == '0')
+                {
+                    em.entities[1].setY(-2);
+                }
+            }
+            if (GetAsyncKeyState(VK_DOWN) & 0x8000)
+            {
+                if ((map[(em.entities[1].getX())][em.entities[1].getY() + 1]) == '0')
+                {
+                    em.entities[1].setY(-1);
+                }
+            }
+            if (GetAsyncKeyState(VK_LEFT) & 0x8000)
+            {
+                if ((map[(em.entities[1].getX()) - 1][em.entities[1].getY()]) == '0')
+                {
+                    em.entities[1].setX(-2);
+                }
+            }
+            if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
+            {
+                if ((map[(em.entities[1].getX()) + 1][(em.entities[1].getY())]) == '0')
+                {
+                    em.entities[1].setX(-1);
+                }
+            }
+            if ((GetAsyncKeyState('1') & 0x8000) && (GetAsyncKeyState(VK_CONTROL) & 0x8000))
+            {
+                switch (em.entities[0].getStatus())
+                {
+                case 'a':
+                    if (map[(em.entities[0].getX()) - 1][em.entities[0].getY()] != '2')
+                        map[(em.entities[0].getX()) - 1][em.entities[0].getY()] = '1';
+                    break;
+                case 'd':
+                    if (map[(em.entities[0].getX()) + 1][em.entities[0].getY()] != '2')
+                        map[(em.entities[0].getX()) + 1][em.entities[0].getY()] = '1';
+                    break;
+                case 'w':
+                    if (map[(em.entities[0].getX())][em.entities[0].getY() - 1] != '2')
+                        map[(em.entities[0].getX())][em.entities[0].getY() - 1] = '1';
+                    break;
+                case 's':
+                    if (map[(em.entities[0].getX())][em.entities[0].getY() + 1] != '2')
+                        map[(em.entities[0].getX())][em.entities[0].getY() + 1] = '1';
+                    break;
+                default:
+                    break;
+                }
+            }
+            else if (GetAsyncKeyState('1') & 0x8000)
+            {
+                int tempdata;
+                switch (em.entities[0].getStatus())
+                {
+                case 'a':
+                    if ((tempdata = detectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
+                        map[tempdata + 1][em.entities[0].getY()] = '1';
+                    break;
+                case 'd':
+                    if ((tempdata = detectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
+                        map[tempdata - 1][em.entities[0].getY()] = '1';
+                    break;
+                case 'w':
+                    if ((tempdata = detectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
+                        map[em.entities[0].getX()][tempdata - 1] = '1';
+                    break;
+                case 's':
+                    if ((tempdata = detectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
+                        map[em.entities[0].getX()][tempdata + 1] = '1';
+                    break;
+                default:
+                    break;
+                }
+            }
+            if (GetAsyncKeyState('Q') & 0x8000) // 检查Q键是否被按下
             {
                 break;
             }
         }
         SetPosition(0, 1);
-        PrintMapByRange(map, rolindex, colindex);
+        // PrintMapByRange(map, rolindex, colindex);
+        PrintMapByRow(&map);
         std::cout.flush();
         SetPosition(40, 0);
         std::cout << "Frame: " << frameCount;
-        std::cout.flush();
         FPS.printFps();
-        fpsdata << frameCount << "|" << FPS.getFps() << std::endl;
+        fpsdata << frameCount << "|" << FPS.getFps();
+        std::cout.flush();
+        FPS.getFps();
     }
 
     int num = map.size();
     std::cout << num << std::endl;
 
-    writeMapToFile(map, "map.txt");
+    writeMapToFile(map, "areamap.txt");
     em.writeEntitiesToFile("entities.txt");
     fpsdata.close();
     system("pause");
