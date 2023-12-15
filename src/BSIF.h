@@ -1,4 +1,4 @@
-#define VERSION_TXT " 6.1.1 - PRE - 121400P1 "
+#define VERSION_TXT " 6.1.1 - PRE - 121523P1 "
 #include <windows.h>
 #include <vector>
 #include <array>
@@ -8,20 +8,20 @@
 #include <filesystem>
 #include <ctime>
 
-#define FPSLIMIT 60
+#define FPSLIMIT 120
 #define WIN_MENU_LONAXIS 64 // 横长
 #define WIN_MENU_HORAXIS 25 // 纵长
 HANDLE hOutStd;
 HWND hwnd;
 bool is_esc_permitted = true;
 
-std::string formatTime(time_t time);
-void readMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename);
-void writeMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename);
+std::string FormatTime(time_t time);
+void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename);
+void WriteMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename);
 void SetColor(UINT uFore, UINT uBack);
-void PrintMapByCol(const std::vector<std::array<char, 64>> *map);
-void PrintMapByRow(const std::vector<std::array<char, 64>> *map);
-void PrintMapByRange(const std::vector<std::array<char, 64>> &map, int rowIdx, int colIdx);
+void PrintMapByCol(const std::vector<std::vector<char>> *map);
+void PrintMapByRow(const std::vector<std::vector<char>> *map);
+void PrintMapByRange(const std::vector<std::vector<char>> &map, int rowIdx, int colIdx);
 void AppendMapToFile(const std::string &filename);
 bool SetPosition(int x, int y);
 void SetConsoleWindowPosition(int x, int y);
@@ -50,3 +50,5 @@ void InitMainDrive(void);
 // (6.1.1 - preRelease - 121420P1):编译时添加了程序ico,调整了显示参数
 // (6.1.1 - preRelease - 121421P1):编写实体操作逻辑
 // (6.1.1 - preRelease - 121501P1):编写地图编辑工具
+// (6.1.1 - preRelease - 121515P1):继续完善地图编辑工具基本功能,新增了新的位移方式
+// (6.1.1 - preRelease - 121523P1):开始编写虚拟体相关代码,包括文件读写,显示,逻辑等

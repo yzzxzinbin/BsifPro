@@ -159,7 +159,7 @@ public:
         SetColor(7, 0);
         init_Window_Str();
     }
-    void cui_basic_fill(char ch)
+    void cui_Basic_Fill(char ch)
     {
         COORD position{};
         position.X = windowX + 1;
@@ -175,7 +175,7 @@ public:
         }
         SetColor(7, 0);
     }
-    void init_new_window(int x, int y, int lenth, int height, int foreColor, int backColor)
+    void init_New_Window(int x, int y, int lenth, int height, int foreColor, int backColor)
     {
         windowWidth = lenth - 2;
         windowHeight = height - 2;
@@ -231,7 +231,7 @@ public:
         std::cout.flush();
         init_Window_Str();
     }
-    void init_noboundary_window(int x, int y, int lenth, int height)
+    void init_Nobound_Window(int x, int y, int lenth, int height)
     {
         COORD position{};
         position.X = x;
@@ -392,12 +392,13 @@ public:
     // 从文件中读取实体数据
     bool readEntitiesFromFile(const std::string &filename)
     {
+        entities.clear();
         std::ofstream loginfo;
         loginfo.open("loginfo.txt", std::ios::app);
         std::ifstream file(filename);
         if (!file.is_open())
         {
-            loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
             return false;
         }
 
@@ -432,10 +433,11 @@ public:
     {
         std::ofstream loginfo;
         loginfo.open("loginfo.txt", std::ios::app);
-        std::ofstream file(filename);
+        std::ofstream file;
+        file.open(filename, std::ios::trunc);
         if (!file.is_open())
         {
-            loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
             return false;
         }
 
@@ -477,8 +479,8 @@ struct VirtualObject
 };
 class VirtualObjectManager
 {
-private:
-    static const int MAX_OBJECTS = 100; // 最大虚拟体数量
+public:
+    static const int MAX_OBJECTS = 50;  // 最大虚拟体数量
     VirtualObject objects[MAX_OBJECTS]; // 虚拟体数组
 public:
     VirtualObjectManager()
@@ -489,7 +491,7 @@ public:
         }
     }
     // 添加新的虚拟体
-    void addObject(int x, int y)
+    void addObject(int x, int y, int lx, int ly, int dir, int att, int speed, int len, int attribute)
     {
         int index = findEmptyIndex(); // 查找空闲节点的索引
         if (index != -1)
@@ -497,6 +499,13 @@ public:
             VirtualObject &object = objects[index];
             object.x = x;
             object.y = y;
+            object.lx = lx;
+            object.ly = ly;
+            object.dir = dir;
+            object.att = att;
+            object.speed = speed;
+            object.len = len;
+            object.attribute = attribute;
             object.exist = 1; // 设置 exist 为 1，表示有数据
         }
     }
@@ -508,7 +517,6 @@ public:
             objects[index].exist = 0; // 设置 exist 为 0，表示无数据
         }
     }
-
     // 根据索引获取虚拟体
     VirtualObject *getObjectByIndex(int index)
     {
@@ -594,7 +602,7 @@ public:
         std::ifstream file(filename);
         if (!file.is_open())
         {
-            loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
             return false;
         }
 
@@ -605,7 +613,7 @@ public:
             std::vector<std::string> fields = split(line, ',');
             if (fields.size() != 10)
             {
-                loginfo << formatTime(time(nullptr)) << "Invalid data format in file: " << filename << std::endl;
+                loginfo << FormatTime(time(nullptr)) << "Invalid data format in file: " << filename << std::endl;
                 return false;
             }
 
@@ -640,7 +648,7 @@ public:
         std::ofstream file(filename);
         if (!file.is_open())
         {
-            loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
             return false;
         }
 
@@ -673,7 +681,7 @@ private:
 };
 EntityManager em;
 VirtualObjectManager vom;
-std::string formatTime(time_t time)
+std::string FormatTime(time_t time)
 {
     // 将时间转换为结构体
     struct tm *timeinfo;
@@ -692,7 +700,7 @@ std::string formatTime(time_t time)
     // 返回格式化后的时间字符串
     return ss.str();
 }
-void readMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename)
+void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename)
 {
     std::ofstream loginfo;
     loginfo.open("loginfo.txt", std::ios::app);
@@ -718,15 +726,15 @@ void readMapFromFile(std::vector<std::vector<char>> &map, const std::string &fil
             map.push_back(row);
         }
         file.close();
-        loginfo << formatTime(time(nullptr)) << "Map read from file successfully." << std::endl;
+        loginfo << FormatTime(time(nullptr)) << "Map read from file successfully." << std::endl;
     }
     else
     {
-        loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename;
+        loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename;
     }
 }
 
-void writeMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename)
+void WriteMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename)
 {
     std::ofstream loginfo;
     loginfo.open("loginfo.txt", std::ios::app);
@@ -742,11 +750,11 @@ void writeMapToFile(const std::vector<std::vector<char>> &map, const std::string
             file << std::endl;
         }
         file.close();
-        loginfo << formatTime(time(nullptr)) << "Map written to file successfully." << std::endl;
+        loginfo << FormatTime(time(nullptr)) << "Map written to file successfully." << std::endl;
     }
     else
     {
-        loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+        loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
     }
 }
 void SetColor(UINT uFore, UINT uBack)
@@ -782,9 +790,9 @@ void PrintMapByCol(const std::vector<std::vector<char>> *map)
 }
 void PrintMapByRow(const std::vector<std::vector<char>> *map)
 {
-    for (size_t col = 0; col < map->at(0).size(); col++)
+    for (int col = 0; col < map->at(0).size(); col++)
     {
-        for (size_t row = 0; row < map->size(); row++)
+        for (int row = 0; row < map->size(); row++)
         {
             for (const Entity &entity : em.entities)
             {
@@ -795,12 +803,35 @@ void PrintMapByRow(const std::vector<std::vector<char>> *map)
                               << "\033[0m";
                     goto nomapout;
                 }
-                if (entity.getName() == "player2" && entity.getY() == col && entity.getX() == row)
+                else if (entity.getName() == "player2" && entity.getY() == col && entity.getX() == row)
                 {
                     std::cout << "\033[30m\033[43m"
                               << "☯ "
                               << "\033[0m";
                     goto nomapout;
+                }
+            }
+            for (const VirtualObject &virobj : vom.objects)
+            {
+                if ((virobj.exist == 1) && (virobj.x == row) && (virobj.y == col))
+                {
+                    switch (virobj.attribute)
+                    {
+                    case 0:
+                        std::cout << "\033[30m\033[43m"
+                                  << "Ⓘ "
+                                  << "\033[0m";
+                        goto nomapout;
+                        break;
+                    case 1:
+                        std::cout << "\033[31m\033[41m"
+                                  << "  "
+                                  << "\033[0m";
+                        goto nomapout;
+                        break;
+                    default:
+                        break;
+                    }
                 }
             }
             switch ((*map)[row][col])
@@ -876,13 +907,13 @@ void PrintMapByRange(const std::vector<std::vector<char>> &map, int rowIdx, int 
                 switch (map[mapRow][mapCol])
                 {
                 case '0':
-                    std::cout << "\033[30m\033[45m"
-                              << "▒▒"
+                    std::cout << "\033[30m\033[47m"
+                              << "  "
                               << "\033[0m";
                     break;
                 case '1':
-                    std::cout << "\033[37m\033[47m"
-                              << "  "
+                    std::cout << "\033[37m\033[45m"
+                              << "▒▒"
                               << "\033[0m";
                     break;
                 case '2':
@@ -965,7 +996,7 @@ void AppendMapToFile(const std::string &filename)
     }
     else
     {
-        loginfo << formatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+        loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
     }
 }
 bool SetPosition(int x, int y)
@@ -1029,7 +1060,7 @@ bool OpenANSIControlChar()
     }
     return true;
 }
-int detectMap(const std::vector<std::vector<char>> &map, int x, int y, char status, char symbol)
+int DetectMap(const std::vector<std::vector<char>> &map, int x, int y, char status, char symbol)
 {
 
     while (true)
@@ -1096,7 +1127,7 @@ int CoreCircle(void)
 
     // 创建地图
     std::vector<std::vector<char>> map;
-    readMapFromFile(map, "areamap.txt");
+    ReadMapFromFile(map, "areamap.txt");
     // 读取虚拟体和实体数据
 
     em.readEntitiesFromFile("entities.txt");
@@ -1107,14 +1138,14 @@ int CoreCircle(void)
 
     WindowDisplay infowindow;
 
-    infowindow.init_new_window(96, 1, 30, 29, 0x0, 0xb);
-    infowindow.cui_basic_fill(' ');
+    infowindow.init_New_Window(96, 1, 30, 29, 0x0, 0xb);
+    infowindow.cui_Basic_Fill(' ');
 
     // 核心循环,循环中非阻塞读取键盘输入,然后使用switch对awsd四个按键进行响应,即改变相应的地图索引值
     for (frameCount = 0; true; frameCount++)
     {
         FPS.resetStartTime();
-        if (frameCount % 20 == 0)
+        if (frameCount % 10 == 0)
         {
             infowindow.put_In_Text(0, 0, "|frame:" + std::to_string(frameCount) + " ");
             infowindow.put_In_Text(0, 1, "|FPS:" + std::to_string(FPS.getFpsValue()) + " ");
@@ -1132,7 +1163,9 @@ int CoreCircle(void)
         {
             if (GetAsyncKeyState('W') & 0x8000) // 检查W键是否被按下，并且地图数据中相应位置为1
             {
-                if (map[(em.entities[0].getX())][em.entities[0].getY() - 1] == '0')
+                if ((map[(em.entities[0].getX())][em.entities[0].getY() - 1] == '0')
+                    //&& (em.entities[0].getStatus() == 'w')
+                )
                 {
                     em.entities[0].setY(-2);
                 }
@@ -1140,7 +1173,9 @@ int CoreCircle(void)
             }
             if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下，并且地图数据中相应位置为1
             {
-                if ((map[(em.entities[0].getX())][em.entities[0].getY() + 1]) == '0')
+                if ((map[(em.entities[0].getX())][em.entities[0].getY() + 1]) == '0'
+                    //&& (em.entities[0].getStatus() == 's')
+                )
                 {
                     em.entities[0].setY(-1);
                 }
@@ -1148,7 +1183,9 @@ int CoreCircle(void)
             }
             if (GetAsyncKeyState('A') & 0x8000) // 检查A键是否被按下，并且地图数据中相应位置为1
             {
-                if ((map[(em.entities[0].getX()) - 1][em.entities[0].getY()]) == '0')
+                if ((map[(em.entities[0].getX()) - 1][em.entities[0].getY()]) == '0'
+                    //&& (em.entities[0].getStatus() == 'a')
+                )
                 {
                     em.entities[0].setX(-2);
                 }
@@ -1156,7 +1193,9 @@ int CoreCircle(void)
             }
             if (GetAsyncKeyState('D') & 0x8000) // 检查D键是否被按下，并且地图数据中相应位置为1
             {
-                if ((map[(em.entities[0].getX()) + 1][(em.entities[0].getY())]) == '0')
+                if ((map[(em.entities[0].getX()) + 1][(em.entities[0].getY())]) == '0'
+                    //&& (em.entities[0].getStatus() == 'd')
+                )
                 {
                     em.entities[0].setX(-1);
                 }
@@ -1214,6 +1253,13 @@ int CoreCircle(void)
                     em.entities[1].setX(-1);
                 }
             }
+            if (GetAsyncKeyState(VK_SPACE) & 0x8000)
+            {
+                if (map[(em.entities[0].getX())][(em.entities[0].getY())] == '0')
+                {
+                    vom.addObject(em.entities[0].getX(), em.entities[0].getY(), 0, 0, 0, 100, 0, 200, 0);
+                }
+            }
             if ((GetAsyncKeyState('1') & 0x8000) && (GetAsyncKeyState(VK_CONTROL) & 0x8000))
             {
                 switch (em.entities[0].getStatus())
@@ -1244,20 +1290,139 @@ int CoreCircle(void)
                 switch (em.entities[0].getStatus())
                 {
                 case 'a':
-                    if ((tempdata = detectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
                         map[tempdata + 1][em.entities[0].getY()] = '1';
                     break;
                 case 'd':
-                    if ((tempdata = detectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
                         map[tempdata - 1][em.entities[0].getY()] = '1';
                     break;
                 case 'w':
-                    if ((tempdata = detectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
-                        map[em.entities[0].getX()][tempdata - 1] = '1';
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
+                        map[em.entities[0].getX()][tempdata + 1] = '1';
                     break;
                 case 's':
-                    if ((tempdata = detectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
-                        map[em.entities[0].getX()][tempdata + 1] = '1';
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
+                        map[em.entities[0].getX()][tempdata - 1] = '1';
+                    break;
+                default:
+                    break;
+                }
+            }
+            if ((GetAsyncKeyState('2') & 0x8000) && (GetAsyncKeyState(VK_CONTROL) & 0x8000))
+            {
+                switch (em.entities[0].getStatus())
+                {
+                case 'a':
+                    map[(em.entities[0].getX()) - 1][em.entities[0].getY()] = '2';
+                    break;
+                case 'd':
+                    map[(em.entities[0].getX()) + 1][em.entities[0].getY()] = '2';
+                    break;
+                case 'w':
+                    map[(em.entities[0].getX())][em.entities[0].getY() - 1] = '2';
+                    break;
+                case 's':
+                    map[(em.entities[0].getX())][em.entities[0].getY() + 1] = '2';
+                    break;
+                default:
+                    break;
+                }
+            }
+            else if (GetAsyncKeyState('2') & 0x8000)
+            {
+                int tempdata;
+                switch (em.entities[0].getStatus())
+                {
+                case 'a':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
+                        map[tempdata + 1][em.entities[0].getY()] = '2';
+                    break;
+                case 'd':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
+                        map[tempdata - 1][em.entities[0].getY()] = '2';
+                    break;
+                case 'w':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
+                        map[em.entities[0].getX()][tempdata + 1] = '2';
+                    break;
+                case 's':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
+                        map[em.entities[0].getX()][tempdata - 1] = '2';
+                    break;
+                default:
+                    break;
+                }
+            }
+            if ((GetAsyncKeyState('3') & 0x8000) && (GetAsyncKeyState(VK_CONTROL) & 0x8000))
+            {
+                switch (em.entities[0].getStatus())
+                {
+                case 'a':
+                    if (map[(em.entities[0].getX()) - 1][em.entities[0].getY()] != '2')
+                        map[(em.entities[0].getX()) - 1][em.entities[0].getY()] = '3';
+                    break;
+                case 'd':
+                    if (map[(em.entities[0].getX()) + 1][em.entities[0].getY()] != '2')
+                        map[(em.entities[0].getX()) + 1][em.entities[0].getY()] = '3';
+                    break;
+                case 'w':
+                    if (map[(em.entities[0].getX())][em.entities[0].getY() - 1] != '2')
+                        map[(em.entities[0].getX())][em.entities[0].getY() - 1] = '3';
+                    break;
+                case 's':
+                    if (map[(em.entities[0].getX())][em.entities[0].getY() + 1] != '2')
+                        map[(em.entities[0].getX())][em.entities[0].getY() + 1] = '3';
+                    break;
+                default:
+                    break;
+                }
+            }
+            else if (GetAsyncKeyState('3') & 0x8000)
+            {
+                int tempdata;
+                switch (em.entities[0].getStatus())
+                {
+                case 'a':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
+                        map[tempdata + 1][em.entities[0].getY()] = '3';
+                    break;
+                case 'd':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
+                        map[tempdata - 1][em.entities[0].getY()] = '3';
+                    break;
+                case 'w':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
+                        map[em.entities[0].getX()][tempdata + 1] = '3';
+                    break;
+                case 's':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
+                        map[em.entities[0].getX()][tempdata - 1] = '3';
+                    break;
+                default:
+                    break;
+                }
+            }
+            if (GetAsyncKeyState('H') & 0x8000)
+            {
+                int tempdata;
+                switch (em.entities[0].getStatus())
+                {
+                case 'a':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
+                        em.entities[0].setX(tempdata + 1);
+                    break;
+                case 'd':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
+                        em.entities[0].setX(tempdata - 1);
+                    break;
+                case 'w':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
+                        em.entities[0].setY(tempdata + 1);
+                    break;
+                case 's':
+                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
+                        em.entities[0].setY(tempdata - 1);
                     break;
                 default:
                     break;
@@ -1268,8 +1433,69 @@ int CoreCircle(void)
                 break;
             }
         }
+
+        // 对虚拟体表vom进行遍历
+        for (auto &virobj : vom.objects)
+        {
+            if (virobj.exist == 1)
+            {
+                switch (virobj.attribute)
+                {
+                case 0:
+                    if (virobj.len != 0)
+                    {
+                        virobj.len--;
+                    }
+                    else if (virobj.len == 0)
+                    {
+                        virobj.exist = 0;
+                        int tempdataa = DetectMap(map, virobj.x, virobj.y, 'a', '0');
+                        int tempdatad = DetectMap(map, virobj.x, virobj.y, 'd', '0');
+                        int tempdataw = DetectMap(map, virobj.x, virobj.y, 'w', '0');
+                        int tempdatas = DetectMap(map, virobj.x, virobj.y, 's', '0');
+                        if (abs(tempdataa - virobj.x) > 5)
+                            tempdataa = virobj.x - 5;
+                        if (abs(tempdatad - virobj.x) > 5)
+                            tempdatad = virobj.x + 5;
+                        if (abs(tempdataw - virobj.y) > 5)
+                            tempdataw = virobj.y - 5;
+                        if (abs(tempdatas - virobj.y) > 5)
+                            tempdatas = virobj.y + 5;
+                        for (int i = 0; i < abs(tempdataa - virobj.x); i++)
+                        {
+                            vom.addObject(virobj.x - i, virobj.y, 0, 0, 0, 100, 0, 20, 1);
+                        }
+                        for (int i = 0; i < abs(tempdatad - virobj.x); i++)
+                        {
+                            vom.addObject(virobj.x + i, virobj.y, 0, 0, 0, 100, 0, 20, 1);
+                        }
+                        for (int i = 0; i < abs(tempdataw - virobj.y); i++)
+                        {
+                            vom.addObject(virobj.x, virobj.y - i, 0, 0, 0, 100, 0, 20, 1);
+                        }
+                        for (int i = 0; i < abs(tempdatas - virobj.y); i++)
+                        {
+                            vom.addObject(virobj.x, virobj.y + i, 0, 0, 0, 100, 0, 20, 1);
+                        }
+                    }
+                    break;
+                case 1:
+                    if (virobj.len != 0)
+                    {
+                        virobj.len--;
+                    }
+                    else if (virobj.len == 0)
+                    {
+                        virobj.exist = 0;
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
         SetPosition(0, 1);
-        // PrintMapByRange(map, rolindex, colindex);
+        // PrintMapByRange(map, em.entities[0].getX(), em.entities[0].getY()); // PrintMapByRow(&map, colindex);
         PrintMapByRow(&map);
         std::cout.flush();
         SetPosition(40, 0);
@@ -1277,14 +1503,14 @@ int CoreCircle(void)
         FPS.printFps();
         fpsdata << frameCount << "|" << FPS.getFps();
         std::cout.flush();
-        FPS.getFps();
     }
 
     int num = map.size();
     std::cout << num << std::endl;
 
-    writeMapToFile(map, "areamap.txt");
+    WriteMapToFile(map, "areamap.txt");
     em.writeEntitiesToFile("entities.txt");
+    vom.writeVirtualObjectsToFile("virtualobjects.txt");
     fpsdata.close();
     system("pause");
     return 0;
@@ -1417,8 +1643,8 @@ printMenu_:
         {
             WindowDisplay setWindow;
 
-            setWindow.init_new_window(10, 10, 35, 8, 0x0, 0xb);
-            setWindow.cui_basic_fill(' ');
+            setWindow.init_New_Window(10, 10, 35, 8, 0x0, 0xb);
+            setWindow.cui_Basic_Fill(' ');
             setWindow.put_In_Text(0, 0, "测试");
             setWindow.display_Window_Str();
             continue;
