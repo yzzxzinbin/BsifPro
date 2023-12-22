@@ -26,17 +26,21 @@ public:
     }
     void printFps()
     {
+        double fps = getFpsLimited();
+        std::cout << "\tFPS: " << fps << "  "
+                  << "uselessCirPerFrame:" << uselesscir << " ";
+    }
+    double getFpsLimited(void)
+    {
         uselesscir = 0;
-    x:
-        // sleepMicroseconds(100);
-        double fps = getFps();
+    z:
+        fps = getFps();
         for (; (int)fps > FPSLIMIT;)
         {
             uselesscir++;
-            goto x;
+            goto z;
         }
-        std::cout << "\tFPS: " << fps << "  "
-                  << "uselessCirPerFrame:" << uselesscir << " ";
+        return fps;
     }
     void resetStartTime()
     {
@@ -58,6 +62,8 @@ private:
     double timeFreq;
     double timeNow;
     double fps;
+
+public:
     int uselesscir = 0;
     void getCurrentTime()
     {
@@ -151,11 +157,13 @@ public:
         for (const std::string &line : window)
         {
 
-            SetPosition(windowX, windowY + row);
+            std::cout << "\033[" << windowY + row + 1 << ";" << windowX + 1 << "H";
+            // SetPosition(windowX, windowY + row);
             std::cout << line;
-            std::cout.flush();
+            // std::cout.flush();
             row++;
         }
+
         SetColor(7, 0);
         init_Window_Str();
     }
@@ -480,19 +488,26 @@ struct VirtualObject
 class VirtualObjectManager
 {
 public:
-    static const int MAX_OBJECTS = 50;  // 最大虚拟体数量
-    VirtualObject objects[MAX_OBJECTS]; // 虚拟体数组
+    static const int MAX_OBJECTS = 8000; // 最大虚拟体数量
+    VirtualObject objects[MAX_OBJECTS];  // 虚拟体数组
+    int virUsedNum = 0;                  // 已使用的虚拟体数量,0表示objects为空
 public:
     VirtualObjectManager()
+    {
+        initVirtualObjectManager();
+    }
+    void initVirtualObjectManager()
     {
         for (int i = 0; i < MAX_OBJECTS; i++)
         {
             objects[i].exist = 0; // 初始化所有节点的 exist 为 0
+            virUsedNum = 0;       // 虚拟体数量初始化为 0
         }
     }
     // 添加新的虚拟体
     void addObject(int x, int y, int lx, int ly, int dir, int att, int speed, int len, int attribute)
     {
+
         int index = findEmptyIndex(); // 查找空闲节点的索引
         if (index != -1)
         {
@@ -507,6 +522,7 @@ public:
             object.len = len;
             object.attribute = attribute;
             object.exist = 1; // 设置 exist 为 1，表示有数据
+            virUsedNum++;     // 虚拟体数量加 1
         }
     }
     // 销毁虚拟体
@@ -515,6 +531,7 @@ public:
         if (index >= 0 && index < MAX_OBJECTS)
         {
             objects[index].exist = 0; // 设置 exist 为 0，表示无数据
+            virUsedNum--;             // 虚拟体数量减 1
         }
     }
     // 根据索引获取虚拟体
@@ -590,16 +607,19 @@ private:
                 return i;
             }
         }
-        return -1; // 没有空闲节点
+        exit(0); // 没有空闲节点
     }
 
 public:
     // 从文件中读取虚拟体数据
     bool readVirtualObjectsFromFile(const std::string &filename)
     {
+        initVirtualObjectManager();
+
         std::ofstream loginfo;
         loginfo.open("loginfo.txt", std::ios::app);
         std::ifstream file(filename);
+
         if (!file.is_open())
         {
             loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
@@ -607,7 +627,6 @@ public:
         }
 
         std::string line;
-        int index = 0;
         while (std::getline(file, line))
         {
             std::vector<std::string> fields = split(line, ',');
@@ -617,7 +636,7 @@ public:
                 return false;
             }
 
-            VirtualObject &object = objects[index];
+            VirtualObject &object = objects[virUsedNum];
             object.x = std::stoi(fields[0]);
             object.y = std::stoi(fields[1]);
             object.lx = std::stoi(fields[2]);
@@ -628,9 +647,9 @@ public:
             object.len = std::stoi(fields[7]);
             object.exist = std::stoi(fields[8]);
             object.attribute = std::stoi(fields[9]);
-
-            index++;
-            if (index >= MAX_OBJECTS)
+            if (object.exist == 1)
+                virUsedNum++;
+            if (virUsedNum >= MAX_OBJECTS)
             {
                 break;
             }
@@ -654,12 +673,15 @@ public:
 
         for (int i = 0; i < MAX_OBJECTS; i++)
         {
-            const VirtualObject &object = objects[i];
-            file << object.x << "," << object.y << ","
-                 << object.lx << "," << object.ly << ","
-                 << object.dir << "," << object.att << ","
-                 << object.speed << "," << object.len << ","
-                 << object.exist << "," << object.attribute << std::endl;
+            if (objects[i].exist == 1)
+            {
+                const VirtualObject &object = objects[i];
+                file << object.x << "," << object.y << ","
+                     << object.lx << "," << object.ly << ","
+                     << object.dir << "," << object.att << ","
+                     << object.speed << "," << object.len << ","
+                     << object.exist << "," << object.attribute << std::endl;
+            }
         }
 
         file.close();
@@ -811,26 +833,38 @@ void PrintMapByRow(const std::vector<std::vector<char>> *map)
                     goto nomapout;
                 }
             }
-            for (const VirtualObject &virobj : vom.objects)
             {
-                if ((virobj.exist == 1) && (virobj.x == row) && (virobj.y == col))
+                int virIndex = 0;
+                int virUsedNumFixed = vom.virUsedNum;
+                for (const VirtualObject &virobj : vom.objects)
                 {
-                    switch (virobj.attribute)
+                    if (virIndex == virUsedNumFixed)
                     {
-                    case 0:
-                        std::cout << "\033[30m\033[43m"
-                                  << "Ⓘ "
-                                  << "\033[0m";
-                        goto nomapout;
                         break;
-                    case 1:
-                        std::cout << "\033[31m\033[41m"
-                                  << "  "
-                                  << "\033[0m";
-                        goto nomapout;
-                        break;
-                    default:
-                        break;
+                    }
+                    if (virobj.exist == 1)
+                    {
+                        virIndex++;
+                        if ((virobj.x == row) && (virobj.y == col))
+                        {
+                            switch (virobj.attribute)
+                            {
+                            case 0:
+                                std::cout << "\033[30m\033[43m"
+                                          << "Ⓘ "
+                                          << "\033[0m";
+                                goto nomapout;
+                                break;
+                            case 1:
+                                std::cout << "\033[31m\033[41m"
+                                          << "  "
+                                          << "\033[0m";
+                                goto nomapout;
+                                break;
+                            default:
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -876,7 +910,7 @@ void PrintMapByRow(const std::vector<std::vector<char>> *map)
         nomapout:;
         }
         if (col != map->at(0).size() - 1)
-            std::cout << std::endl;
+            std::cout << "\e[1E";
     }
 }
 void PrintMapByRange(const std::vector<std::vector<char>> &map, int rowIdx, int colIdx)
@@ -1096,7 +1130,7 @@ int DetectMap(const std::vector<std::vector<char>> &map, int x, int y, char stat
             }
             break;
         default:
-            return -1;
+            exit(0);
         }
     }
 }
@@ -1124,6 +1158,8 @@ int CoreCircle(void)
     // 性能日志
     std::ofstream fpsdata;
     fpsdata.open("fpsdata.txt", std::ios::out | std::ios::trunc);
+    std::ofstream loginfo;
+    loginfo.open("loginfo.txt", std::ios::out | std::ios::app);
 
     // 创建地图
     std::vector<std::vector<char>> map;
@@ -1154,8 +1190,9 @@ int CoreCircle(void)
             infowindow.put_In_Text(0, 4, "|rolindex:" + std::to_string(rolindex) + " ");
             infowindow.put_In_Text(0, 5, "|colindex:" + std::to_string(colindex) + " ");
             infowindow.put_In_Text(0, 6, "|entities:" + std::to_string(em.entities.size()) + " ");
-            infowindow.put_In_Text(0, 7, "|en1x:" + std::to_string(em.entities[0].getX()));
-            infowindow.put_In_Text(0, 8, "|en1y:" + std::to_string(em.entities[0].getY()));
+            infowindow.put_In_Text(0, 7, "|en1x:" + std::to_string(em.entities[0].getX()) + " ");
+            infowindow.put_In_Text(0, 8, "|en1y:" + std::to_string(em.entities[0].getY()) + " ");
+            infowindow.put_In_Text(0, 9, "|virUsedNum:" + std::to_string(vom.virUsedNum) + " ");
         }
         infowindow.display_Window_Str();
 
@@ -1257,9 +1294,26 @@ int CoreCircle(void)
             {
                 if (map[(em.entities[0].getX())][(em.entities[0].getY())] == '0')
                 {
-                    vom.addObject(em.entities[0].getX(), em.entities[0].getY(), 0, 0, 0, 100, 0, 200, 0);
+                    {
+                        int virIndex = 0;
+                        int virUsedNumFixed = vom.virUsedNum;
+                        for (auto &virobj : vom.objects)
+                        {
+                            if (virobj.exist == 1 && virobj.x == em.entities[0].getX() && virobj.y == em.entities[0].getY())
+                            {
+                                goto stopbomb;
+                            }
+                            if (virIndex == virUsedNumFixed)
+                            {
+                                break;
+                            }
+                            virIndex++;
+                        }
+                    }
+                    vom.addObject(em.entities[0].getX(), em.entities[0].getY(), 0, 0, 0, 100, 0, 100, 0);
                 }
             }
+        stopbomb:
             if ((GetAsyncKeyState('1') & 0x8000) && (GetAsyncKeyState(VK_CONTROL) & 0x8000))
             {
                 switch (em.entities[0].getStatus())
@@ -1432,76 +1486,99 @@ int CoreCircle(void)
             {
                 break;
             }
-        }
-
-        // 对虚拟体表vom进行遍历
-        for (auto &virobj : vom.objects)
-        {
-            if (virobj.exist == 1)
+            if (GetAsyncKeyState(VK_TAB) & 0x8000)
             {
-                switch (virobj.attribute)
+                system("pause");
+                break;
+            }
+        }
+        {
+            int virIndex = 0;
+            int virUsedNumFixed = vom.virUsedNum;
+            // 对虚拟体表vom进行遍历
+            for (auto &virobj : vom.objects)
+            {
+                if (virobj.exist == 1)
                 {
-                case 0:
-                    if (virobj.len != 0)
+
+                    switch (virobj.attribute)
                     {
-                        virobj.len--;
-                    }
-                    else if (virobj.len == 0)
-                    {
-                        virobj.exist = 0;
-                        int tempdataa = DetectMap(map, virobj.x, virobj.y, 'a', '0');
-                        int tempdatad = DetectMap(map, virobj.x, virobj.y, 'd', '0');
-                        int tempdataw = DetectMap(map, virobj.x, virobj.y, 'w', '0');
-                        int tempdatas = DetectMap(map, virobj.x, virobj.y, 's', '0');
-                        if (abs(tempdataa - virobj.x) > 5)
-                            tempdataa = virobj.x - 5;
-                        if (abs(tempdatad - virobj.x) > 5)
-                            tempdatad = virobj.x + 5;
-                        if (abs(tempdataw - virobj.y) > 5)
-                            tempdataw = virobj.y - 5;
-                        if (abs(tempdatas - virobj.y) > 5)
-                            tempdatas = virobj.y + 5;
-                        for (int i = 0; i < abs(tempdataa - virobj.x); i++)
+                    case 0:
+                        if (virobj.len != 0)
                         {
-                            vom.addObject(virobj.x - i, virobj.y, 0, 0, 0, 100, 0, 20, 1);
+                            virobj.len--;
                         }
-                        for (int i = 0; i < abs(tempdatad - virobj.x); i++)
+                        else if (virobj.len == 0)
                         {
-                            vom.addObject(virobj.x + i, virobj.y, 0, 0, 0, 100, 0, 20, 1);
+
+                            int tempdataa = DetectMap(map, virobj.x, virobj.y, 'a', '0');
+                            int tempdatad = DetectMap(map, virobj.x, virobj.y, 'd', '0');
+                            int tempdataw = DetectMap(map, virobj.x, virobj.y, 'w', '0');
+                            int tempdatas = DetectMap(map, virobj.x, virobj.y, 's', '0');
+                            if (abs(tempdataa - virobj.x) > 5)
+                                tempdataa = virobj.x - 5;
+                            if (abs(tempdatad - virobj.x) > 5)
+                                tempdatad = virobj.x + 5;
+                            if (abs(tempdataw - virobj.y) > 5)
+                                tempdataw = virobj.y - 5;
+                            if (abs(tempdatas - virobj.y) > 5)
+                                tempdatas = virobj.y + 5;
+                            for (int i = 0; i < abs(tempdataa - virobj.x); i++)
+                            {
+                                vom.addObject(virobj.x - i, virobj.y, 0, 0, 0, 100, 0, 20, 1);
+                                virUsedNumFixed++;
+                            }
+                            for (int i = 0; i < abs(tempdatad - virobj.x); i++)
+                            {
+                                vom.addObject(virobj.x + i, virobj.y, 0, 0, 0, 100, 0, 20, 1);
+                                virUsedNumFixed++;
+                            }
+                            for (int i = 0; i < abs(tempdataw - virobj.y); i++)
+                            {
+                                vom.addObject(virobj.x, virobj.y - i, 0, 0, 0, 100, 0, 20, 1);
+                                virUsedNumFixed++;
+                            }
+                            for (int i = 0; i < abs(tempdatas - virobj.y); i++)
+                            {
+                                vom.addObject(virobj.x, virobj.y + i, 0, 0, 0, 100, 0, 20, 1);
+                                virUsedNumFixed++;
+                            }
+                            virobj.exist = 0;
+                            vom.virUsedNum--;
                         }
-                        for (int i = 0; i < abs(tempdataw - virobj.y); i++)
+                        break;
+                    case 1:
+                        if (virobj.len != 0)
                         {
-                            vom.addObject(virobj.x, virobj.y - i, 0, 0, 0, 100, 0, 20, 1);
+                            virobj.len--;
                         }
-                        for (int i = 0; i < abs(tempdatas - virobj.y); i++)
+                        else if (virobj.len == 0)
                         {
-                            vom.addObject(virobj.x, virobj.y + i, 0, 0, 0, 100, 0, 20, 1);
+                            virobj.exist = 0;
+                            vom.virUsedNum--;
                         }
+                        break;
+                    default:
+                        break;
                     }
-                    break;
-                case 1:
-                    if (virobj.len != 0)
-                    {
-                        virobj.len--;
-                    }
-                    else if (virobj.len == 0)
-                    {
-                        virobj.exist = 0;
-                    }
-                    break;
-                default:
+                    virIndex++;
+                }
+                if (virIndex == virUsedNumFixed)
+                {
                     break;
                 }
             }
         }
         SetPosition(0, 1);
-        // PrintMapByRange(map, em.entities[0].getX(), em.entities[0].getY()); // PrintMapByRow(&map, colindex);
         PrintMapByRow(&map);
-        std::cout.flush();
-        SetPosition(40, 0);
-        std::cout << "Frame: " << frameCount;
-        FPS.printFps();
-        fpsdata << frameCount << "|" << FPS.getFps();
+        // PrintMapByRange(map, em.entities[0].getX(), em.entities[0].getY()); // PrintMapByRow(&map, colindex);
+
+        // std::cout.flush();
+        // SetPosition(40, 0);
+        // std::cout << "Frame: " << frameCount;
+        // FPS.printFps();
+        FPS.getFpsLimited();
+        fpsdata << frameCount << "|" << FPS.getFpsValue() << "|" << FPS.uselesscir << std::endl;
         std::cout.flush();
     }
 
