@@ -1,4 +1,4 @@
-#define VERSION_TXT " 6.1.1 - PRE - 122222P1 "
+#define VERSION_TXT " 6.1.1 - PRE - 122415P1 "
 #include <windows.h>
 #include <vector>
 #include <array>
@@ -7,13 +7,17 @@
 #include <random>
 #include <filesystem>
 #include <ctime>
+#include <string>
 
 #define FPSLIMIT 60
 #define WIN_MENU_LONAXIS 64 // 横长
 #define WIN_MENU_HORAXIS 25 // 纵长
 HANDLE hOutStd;
 HWND hwnd;
-bool is_esc_permitted = true;
+
+std::vector<std::string> setCoreWindowItem;
+std::vector<std::string> setCoreWindowSelect;
+// std::ofstream loginfo("loginfo.txt");
 
 std::string FormatTime(time_t time);
 void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename);
@@ -44,7 +48,7 @@ void InitMainDrive(void);
 // (6.1.0 - preRelease - 121223P1):新增了实体类和虚拟体类
 // (6.1.0 - preRelease - 121323P1):完成了实体类和虚拟体类的文件读写模块
 // (6.1.0 - preRelease - 121400P1):新增日志输出流
-//------------ BSIF 6 泡泡堂工程 --------------
+//------------ BSIF 6.1 泡泡堂工程 --------------
 // (6.1.1 - preRelease - 121412P1):修正并完善了行列图形显示函数,为第一个项目泡泡堂作准备
 // (6.1.1 - preRelease - 121417P1):重写地图数据结构为双重嵌套向量,并对相应API函数做出了调整
 // (6.1.1 - preRelease - 121420P1):编译时添加了程序ico,调整了显示参数
@@ -57,3 +61,7 @@ void InitMainDrive(void);
 // (6.1.1 - preRelease - 121701P1):已定位BFX-2023-1217X1-N: 对虚拟体表同时作注销和注册操作时会引发坐标错误
 // (6.1.1 - preRelease - 122217P1):已修复BFX-2023-1217X1-Y: 对虚拟体表同时作注销和注册操作时会引发坐标错误
 // (6.1.1 - preRelease - 122222P1):已修复BFX-2023-1222X1-Y: 行输出函数对于虚拟体表的遍历逻辑错误导致帧率异常
+// (6.1.1 - preRelease - 122317P1):新增虚拟体地形破坏逻辑
+// (6.1.1 - preRelease - 122317P2):初步尝试编写虚拟体和实体属性交互逻辑
+// (6.1.1 - preRelease - 122323P1):新增设置模块
+// (6.1.1 - preRelease - 122415P1):设置页面逻辑基本完成

@@ -488,7 +488,7 @@ struct VirtualObject
 class VirtualObjectManager
 {
 public:
-    static const int MAX_OBJECTS = 8000; // 最大虚拟体数量
+    static const int MAX_OBJECTS = 6000; // 最大虚拟体数量
     VirtualObject objects[MAX_OBJECTS];  // 虚拟体数组
     int virUsedNum = 0;                  // 已使用的虚拟体数量,0表示objects为空
 public:
@@ -721,6 +721,18 @@ std::string FormatTime(time_t time)
 
     // 返回格式化后的时间字符串
     return ss.str();
+}
+bool isNumber(const std::string &str)
+{
+    try
+    {
+        std::stoi(str); // 尝试将字符串转换为整数
+        return true;    // 转换成功，说明是数字
+    }
+    catch (const std::exception &e)
+    {
+        return false; // 转换失败，说明不是数字
+    }
 }
 void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename)
 {
@@ -1144,8 +1156,7 @@ void InitTestEnv()
     system("mode con cols=126 lines=30");
 
     SetConsoleWindowPosition(-1, -1);
-    // 窗口置顶
-    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_DRAWFRAME);
+
     cstyle.SetFont(L"Consolas", 18);
 }
 int CoreCircle(void)
@@ -1193,6 +1204,7 @@ int CoreCircle(void)
             infowindow.put_In_Text(0, 7, "|en1x:" + std::to_string(em.entities[0].getX()) + " ");
             infowindow.put_In_Text(0, 8, "|en1y:" + std::to_string(em.entities[0].getY()) + " ");
             infowindow.put_In_Text(0, 9, "|virUsedNum:" + std::to_string(vom.virUsedNum) + " ");
+            infowindow.put_In_Text(0, 10, "|en1hp:" + std::to_string(em.entities[0].getHp()) + " ");
         }
         infowindow.display_Window_Str();
 
@@ -1492,15 +1504,15 @@ int CoreCircle(void)
                 break;
             }
         }
-        {
+
+        { // 对虚拟体表vom进行遍历
             int virIndex = 0;
             int virUsedNumFixed = vom.virUsedNum;
-            // 对虚拟体表vom进行遍历
+
             for (auto &virobj : vom.objects)
             {
                 if (virobj.exist == 1)
                 {
-
                     switch (virobj.attribute)
                     {
                     case 0:
@@ -1510,7 +1522,6 @@ int CoreCircle(void)
                         }
                         else if (virobj.len == 0)
                         {
-
                             int tempdataa = DetectMap(map, virobj.x, virobj.y, 'a', '0');
                             int tempdatad = DetectMap(map, virobj.x, virobj.y, 'd', '0');
                             int tempdataw = DetectMap(map, virobj.x, virobj.y, 'w', '0');
@@ -1523,6 +1534,26 @@ int CoreCircle(void)
                                 tempdataw = virobj.y - 5;
                             if (abs(tempdatas - virobj.y) > 5)
                                 tempdatas = virobj.y + 5;
+                            if (map[tempdataa][virobj.y] == '3')
+                            {
+                                map[tempdataa][virobj.y] = '0';
+                                tempdataa--;
+                            }
+                            if (map[tempdatad][virobj.y] == '3')
+                            {
+                                map[tempdatad][virobj.y] = '0';
+                                tempdatad++;
+                            }
+                            if (map[virobj.x][tempdataw] == '3')
+                            {
+                                map[virobj.x][tempdataw] = '0';
+                                tempdataw--;
+                            }
+                            if (map[virobj.x][tempdatas] == '3')
+                            {
+                                map[virobj.x][tempdatas] = '0';
+                                tempdatas++;
+                            }
                             for (int i = 0; i < abs(tempdataa - virobj.x); i++)
                             {
                                 vom.addObject(virobj.x - i, virobj.y, 0, 0, 0, 100, 0, 20, 1);
@@ -1550,6 +1581,13 @@ int CoreCircle(void)
                     case 1:
                         if (virobj.len != 0)
                         {
+                            for (int index = 0; index < em.entities.size(); index++)
+                            {
+                                if (em.entities[index].getX() == virobj.x && em.entities[index].getY() == virobj.y)
+                                {
+                                    em.entities[index].setHp(em.entities[index].getHp() - virobj.att);
+                                }
+                            }
                             virobj.len--;
                         }
                         else if (virobj.len == 0)
@@ -1572,25 +1610,231 @@ int CoreCircle(void)
         SetPosition(0, 1);
         PrintMapByRow(&map);
         // PrintMapByRange(map, em.entities[0].getX(), em.entities[0].getY()); // PrintMapByRow(&map, colindex);
-
-        // std::cout.flush();
-        // SetPosition(40, 0);
-        // std::cout << "Frame: " << frameCount;
-        // FPS.printFps();
         FPS.getFpsLimited();
         fpsdata << frameCount << "|" << FPS.getFpsValue() << "|" << FPS.uselesscir << std::endl;
-        std::cout.flush();
     }
 
     int num = map.size();
     std::cout << num << std::endl;
 
+    // 文件存储操作
     WriteMapToFile(map, "areamap.txt");
     em.writeEntitiesToFile("entities.txt");
-    vom.writeVirtualObjectsToFile("virtualobjects.txt");
+    if (vom.virUsedNum != 0)
+        vom.writeVirtualObjectsToFile("virtualobjects.txt");
     fpsdata.close();
+    loginfo.close();
     system("pause");
     return 0;
+}
+void InitSetInfo(void)
+{
+    setCoreWindowItem.push_back("窗口置顶");
+    setCoreWindowSelect.push_back("Y");
+    setCoreWindowItem.push_back("文件读写");
+    setCoreWindowSelect.push_back("Y");
+    setCoreWindowItem.push_back("设置项a");
+    setCoreWindowSelect.push_back("Y");
+    setCoreWindowItem.push_back("设置项b");
+    setCoreWindowSelect.push_back("Y");
+    setCoreWindowItem.push_back("设置项c");
+    setCoreWindowSelect.push_back("Y");
+    setCoreWindowItem.push_back("设置项d");
+    setCoreWindowSelect.push_back("Y");
+    setCoreWindowItem.push_back("设置项e");
+    setCoreWindowSelect.push_back("100");
+}
+void SetModule(void)
+{
+    system("cls");
+    CONSOLE_SCREEN_BUFFER_INFO CSBI;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &CSBI);
+    WindowDisplay setCoreWindow;
+
+    const int setWindowWidth = 60;
+    const int setWindowHeight = 30;
+    int highlightItem = 0;
+    bool changeState = true;
+    bool bottom_pressed_permisson = true;
+    setCoreWindow.init_New_Window((CSBI.dwSize.X - setWindowWidth) / 2, (CSBI.dwSize.Y - setWindowHeight) / 2, setWindowWidth, setWindowHeight, 0x7, 0x0);
+    setCoreWindow.cui_Basic_Fill(' ');
+
+    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 2) << ";" << ((CSBI.dwSize.X - 8) / 2 + 2) << "H";
+    std::cout << "设置页";
+    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 3) << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 1) << "H";
+    std::cout << "┣";
+    for (int index = 0; index < setWindowWidth - 2; index++)
+    {
+        std::cout << "\e[37m"
+                  << "━"
+                  << "\e[0m";
+    }
+    std::cout << "┫";
+
+    while (true)
+    {
+        Sleep(1);
+        if (changeState)
+            for (int index = 0; index < setCoreWindowItem.size(); index++)
+            {
+                if (index == highlightItem)
+                {
+                    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
+                              << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2) << "H";
+                    for (int indexx = 0; indexx < setWindowWidth - 2; indexx++)
+                    {
+                        std::cout << "\e[46m"
+                                  << " "
+                                  << "\e[0m";
+                    }
+                }
+                else
+                {
+                    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
+                              << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2) << "H";
+                    for (int indexx = 0; indexx < setWindowWidth - 2; indexx++)
+                    {
+                        std::cout << "\e[0m"
+                                  << " ";
+                    }
+                }
+                if (index == highlightItem)
+                {
+                    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
+                              << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2) << "H";
+                    std::cout << "\e[30m\e[46m" << setCoreWindowItem[index] << "\e[0m";
+                }
+                else
+                {
+                    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
+                              << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2) << "H";
+                    std::cout << "\e[37m" << setCoreWindowItem[index] << "\e[0m";
+                }
+
+                if (index == highlightItem)
+                {
+                    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
+                              << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2 + setWindowWidth - 8) << "H";
+                    std::cout << "\e[30m\e[46m" << setCoreWindowSelect[index] << "\e[0m";
+                }
+                else
+                {
+                    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
+                              << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2 + setWindowWidth - 8) << "H";
+                    std::cout << "\e[37m" << setCoreWindowSelect[index] << "\e[0m";
+                }
+                std::cout.flush();
+                changeState = false;
+            }
+
+        if ((GetAsyncKeyState(VK_UP) & 0x8000) && bottom_pressed_permisson)
+        {
+            bottom_pressed_permisson = false;
+            changeState = true;
+            highlightItem--;
+            if (highlightItem < 0)
+            {
+                highlightItem = setCoreWindowItem.size() - 1;
+            }
+        }
+        if ((GetAsyncKeyState(VK_DOWN) & 0x8000) && bottom_pressed_permisson)
+        {
+            bottom_pressed_permisson = false;
+            changeState = true;
+            highlightItem++;
+            if (highlightItem > setCoreWindowItem.size() - 1)
+            {
+                highlightItem = 0;
+            }
+        }
+        if ((GetAsyncKeyState(VK_RETURN) & 0x8000) && bottom_pressed_permisson)
+        {
+            bottom_pressed_permisson = false;
+            changeState = true;
+            if (setCoreWindowSelect[highlightItem] == "Y")
+            {
+                setCoreWindowSelect[highlightItem] = "N";
+            }
+            else if (setCoreWindowSelect[highlightItem] == "N")
+            {
+                setCoreWindowSelect[highlightItem] = "Y";
+            }
+        }
+        if ((GetAsyncKeyState(VK_LEFT) & 0x8000) && bottom_pressed_permisson && (GetAsyncKeyState(VK_SHIFT) & 0x8000))
+        {
+            bottom_pressed_permisson = false;
+            changeState = true;
+            if (isNumber(setCoreWindowSelect[highlightItem]))
+            {
+                int temp = std::stoi(setCoreWindowSelect[highlightItem]);
+                temp = temp - 10;
+                if (temp < 0)
+                {
+                    temp = 0;
+                }
+                setCoreWindowSelect[highlightItem] = std::to_string(temp);
+            }
+        }
+        else if ((GetAsyncKeyState(VK_LEFT) & 0x8000) && bottom_pressed_permisson)
+        {
+            bottom_pressed_permisson = false;
+            changeState = true;
+            if (isNumber(setCoreWindowSelect[highlightItem]))
+            {
+                int temp = std::stoi(setCoreWindowSelect[highlightItem]);
+                temp--;
+                if (temp < 0)
+                {
+                    temp = 0;
+                }
+                setCoreWindowSelect[highlightItem] = std::to_string(temp);
+            }
+        }
+        if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && bottom_pressed_permisson && (GetAsyncKeyState(VK_SHIFT) & 0x8000))
+        {
+            bottom_pressed_permisson = false;
+            changeState = true;
+            if (isNumber(setCoreWindowSelect[highlightItem]))
+            {
+                int temp = std::stoi(setCoreWindowSelect[highlightItem]);
+                temp = temp + 10;
+                if (temp > 1000)
+                {
+                    temp = 1000;
+                }
+                setCoreWindowSelect[highlightItem] = std::to_string(temp);
+            }
+        }
+        else if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && bottom_pressed_permisson)
+        {
+            bottom_pressed_permisson = false;
+            changeState = true;
+            if (isNumber(setCoreWindowSelect[highlightItem]))
+            {
+                int temp = std::stoi(setCoreWindowSelect[highlightItem]);
+                temp++;
+                if (temp > 1000)
+                {
+                    temp = 1000;
+                }
+                setCoreWindowSelect[highlightItem] = std::to_string(temp);
+            }
+        }
+
+        if ((GetAsyncKeyState(VK_ESCAPE) & 0x8000))
+        {
+            break;
+        }
+        if (!((GetAsyncKeyState(VK_SPACE) & 0x8000) ||
+              (GetAsyncKeyState(VK_RETURN) & 0x8000) ||
+              (GetAsyncKeyState(VK_UP) & 0x8000) ||
+              (GetAsyncKeyState(VK_DOWN) & 0x8000) ||
+              (GetAsyncKeyState(VK_LEFT) & 0x8000) ||
+              (GetAsyncKeyState(VK_RIGHT) & 0x8000)))
+        {
+            bottom_pressed_permisson = true;
+        }
+    }
 }
 void InitMainDrive(void)
 {
@@ -1625,23 +1869,28 @@ void InitMainDrive(void)
     // SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), bufferSize);
 
     // 窗口置顶
-    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_DRAWFRAME);
-
+    if (setCoreWindowSelect[0] == "Y")
+    {
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_DRAWFRAME);
+    }
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
     std::cout.tie(nullptr);
 }
 int main(void)
 {
+    InitSetInfo();
     InitMainDrive();
+    bool is_esc_permitted = true;
 printMenu_:
     for (int index = 1; index < 13; index++)
     {
         SetPosition(1, index);
         for (int indexx = 1; indexx < WIN_MENU_LONAXIS - 1; indexx++)
         {
-            std::cout << "\033[40m"
-                      << " ";
+            std::cout << "\e[106m"
+                      << " "
+                      << "\e[0m";
         }
         std::cout.flush();
     }
@@ -1650,8 +1899,7 @@ printMenu_:
         SetPosition(1, index);
         for (int indexx = 1; indexx < WIN_MENU_LONAXIS - 1; indexx++)
         {
-            std::cout << "\033[37\033[40m"
-                      << " ";
+            std::cout << " ";
         }
         std::cout.flush();
     }
@@ -1671,13 +1919,14 @@ printMenu_:
          \  /__/       \  /  /      \/__/                  
           ~~            \/__/                              
      )";
-    std::cout << "\033[1;32m\033[1m\033[5m\033[40m" << logotxt << "\033[0m";
+    std::cout << "\033[1;32m\033[1m\033[5m\e[106m" << logotxt << "\033[0m";
     std::cout.flush();
 
     SetPosition(8, 12);
     std::cout << "\033[33m\033[1m\033[46m"
               << "\n-------------------" << VERSION_TXT << "---------------------"
-              << "\033[36m\033[1m\033[40m"
+              << "\033[0m"
+              << "\033[36m\033[1m"
               << "\n\n    \t\t\t   1. 测试\n\n    \t\t\t   2. 关于\n\n    \t\t\t   S. 设置\n\n    \t\t\t   Q. 退出"
               << "\033[0m";
     std::cout.flush();
@@ -1707,16 +1956,16 @@ printMenu_:
 
     while (true)
     {
-        if (GetAsyncKeyState('1') & 0x8000) // 检查S键是否被按下，并且地图数据中相应位置为1
+        if (GetAsyncKeyState('1') & 0x8000) // 检查1键是否被按下
         {
             CoreCircle();
         }
-        if (GetAsyncKeyState('2') & 0x8000) // 检查S键是否被按下，并且地图数据中相应位置为1
+        if (GetAsyncKeyState('2') & 0x8000) // 检查2键是否被按下
         {
             MessageBoxExA(GetConsoleWindow(), "Copyright 2023 Zhou Xu.All rights reserved.", (VERSION_TXT), MB_OK | MB_ICONASTERISK | MB_TOPMOST, 0);
             continue;
         }
-        if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下，并且地图数据
+        if (GetAsyncKeyState('T') & 0x8000) // 检查T键是否被按下
         {
             WindowDisplay setWindow;
 
@@ -1726,7 +1975,11 @@ printMenu_:
             setWindow.display_Window_Str();
             continue;
         }
-        if (GetAsyncKeyState('Q') & 0x8000) // 检查S键是否被按下
+        if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下
+        {
+            SetModule();
+        }
+        if (GetAsyncKeyState('Q') & 0x8000) // 检查Q键是否被按下
         {
             break;
         }
@@ -1742,6 +1995,6 @@ printMenu_:
             is_esc_permitted = true;
         }
     }
-    std::cin.get();
+
     return 0;
 }
