@@ -1,16 +1,2 @@
-2023.12.24 16:1:53  |Map read from file successfully.
-2023.12.24 16:1:53  |Failed to open file: virtualobjects.txt
-2023.12.24 16:5:11  |Map read from file successfully.
-2023.12.24 16:5:11  |Failed to open file: virtualobjects.txt
-2023.12.24 16:5:40  |Map read from file successfully.
-2023.12.24 16:5:40  |Failed to open file: virtualobjects.txt
-2023.12.24 16:6:24  |Map read from file successfully.
-2023.12.24 16:6:24  |Failed to open file: virtualobjects.txt
-2023.12.24 16:7:11  |Map read from file successfully.
-2023.12.24 16:7:11  |Failed to open file: virtualobjects.txt
-2023.12.24 16:7:43  |Map read from file successfully.
-2023.12.24 16:7:43  |Failed to open file: virtualobjects.txt
-2023.12.24 16:9:56  |Map read from file successfully.
-2023.12.24 16:9:56  |Failed to open file: virtualobjects.txt
-2023.12.24 16:12:44  |Map read from file successfully.
-2023.12.24 16:12:44  |Failed to open file: virtualobjects.txt
+windowLeftPointX: 31
+2023.12.31 3:17:46  |Map read from file successfully.

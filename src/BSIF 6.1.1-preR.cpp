@@ -4,14 +4,16 @@
 
 #include "BSIF.h"
 
-class FrameRateController
+class FrameRateController // 帧率时控类
 {
 public:
-    FrameRateController()
+    FrameRateController() // 构造函数:初始化高精度计时器
     {
+        timeGetDevCaps(&tc, sizeof(TIMECAPS));
+        timeBeginPeriod(tc.wPeriodMin);
         resetStartTime();
     }
-    double getFps()
+    double getFps() // 获取帧率(计算)
     {
         QueryPerformanceFrequency((LARGE_INTEGER *)&time_union);
         timeFreq = (double)time_union.QuadPart;
@@ -20,68 +22,71 @@ public:
         fps = 1000.0 / (timeDiff * 1000);
         return fps;
     }
-    double getFpsValue()
+    double getFpsValue() // 获取帧率(数值)
     {
         return fps;
     }
-    void printFps()
+    void printFps() // 输出帧率
     {
         double fps = getFpsLimited();
         std::cout << "\tFPS: " << fps << "  "
                   << "uselessCirPerFrame:" << uselesscir << " ";
     }
-    double getFpsLimited(void)
+    double getFpsLimited(void) // 限制帧率
     {
         uselesscir = 0;
     z:
         fps = getFps();
-        for (; (int)fps > FPSLIMIT;)
+        for (; (int)fps > SETITEM_limitedFps;)
         {
             uselesscir++;
+            sleepMicroseconds(1000);
             goto z;
         }
         return fps;
     }
-    void resetStartTime()
+    void resetStartTime() // 初始化高精度计时器
     {
         QueryPerformanceCounter(&time_union);
         startTime = time_union.QuadPart;
     }
     void sleepMicroseconds(DWORD microseconds)
     {
-        TIMECAPS tc;
-        timeGetDevCaps(&tc, sizeof(TIMECAPS));
-        timeBeginPeriod(tc.wPeriodMin);
         Sleep(microseconds / 1000);
-        timeEndPeriod(tc.wPeriodMin);
     }
 
 private:
-    LARGE_INTEGER time_union;
-    double startTime;
-    double timeFreq;
-    double timeNow;
-    double fps;
+    LARGE_INTEGER time_union; // 晶振级高精度计时器
+    TIMECAPS tc;              // 毫秒级高精度计时器
+    double startTime;         // 晶振起始值
+    double timeFreq;          // 晶振频率
+    double timeNow;           // 晶振当前值
+    double fps;               // 帧率
 
 public:
     int uselesscir = 0;
-    void getCurrentTime()
+    void getCurrentTime() // 更新晶振当前值
     {
         QueryPerformanceCounter(&time_union);
         timeNow = time_union.QuadPart;
     }
 
 public:
-    int getUselesscir()
+    int getUselesscir() // 获取无用循环数
     {
         return uselesscir;
     }
+
+    ~FrameRateController() // 析构函数:还原多媒体计时器精度
+    {
+        timeEndPeriod(tc.wPeriodMin);
+    }
 };
-class ConsoleStyle
+class ConsoleStyle // 控制台样式
 {
 public:
     static void SetFont(const wchar_t *fontName, int fontSize)
-    {
+    { // 设置控制台字体
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_FONT_INFOEX fontInfo;
         fontInfo.cbSize = sizeof(CONSOLE_FONT_INFOEX);
@@ -95,7 +100,7 @@ public:
     }
 
     static void SetColor(int colorIndex, COLORREF color)
-    {
+    { // 设置控制台颜色
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_SCREEN_BUFFER_INFOEX screenBufferInfo;
         screenBufferInfo.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX);
@@ -104,7 +109,7 @@ public:
         SetConsoleScreenBufferInfoEx(hConsole, &screenBufferInfo);
     }
     static void SetConTitle(const std::string &title)
-    {
+    { // 设置控制台标题
         SetConsoleTitleA(title.c_str());
     }
 };
@@ -121,16 +126,16 @@ private:
     int backgroundColor;             // 背景色
 public:
     void init_Window_Str()
-    {
+    { // 初始化窗口，每行都为空字符串
         window.clear();
-        // 初始化窗口，每行都为空字符串
+
         for (int i = 0; i < windowHeight; i++)
         {
             window.push_back("");
         }
     }
     void put_In_Text(int x, int y, const std::string &text)
-    {
+    { // 将文本放入窗口,本函数负责换行和数据写入
         int row = y;
         int col = x;
         for (const char &c : text)
@@ -148,10 +153,15 @@ public:
             window[row] += c;
             col++;
         }
+        while (col < windowWidth)
+        {
+            window[row] += ' '; // 使用空格填充剩余列数
+            col++;
+        }
     }
 
     void display_Window_Str()
-    {
+    { // 将窗口中的文本输出到控制台
         int row = 0;
         SetColor(foregroundColor, backgroundColor);
         for (const std::string &line : window)
@@ -401,8 +411,6 @@ public:
     bool readEntitiesFromFile(const std::string &filename)
     {
         entities.clear();
-        std::ofstream loginfo;
-        loginfo.open("loginfo.txt", std::ios::app);
         std::ifstream file(filename);
         if (!file.is_open())
         {
@@ -439,8 +447,6 @@ public:
     // 将实体数据写入文件
     bool writeEntitiesToFile(const std::string &filename)
     {
-        std::ofstream loginfo;
-        loginfo.open("loginfo.txt", std::ios::app);
         std::ofstream file;
         file.open(filename, std::ios::trunc);
         if (!file.is_open())
@@ -616,8 +622,6 @@ public:
     {
         initVirtualObjectManager();
 
-        std::ofstream loginfo;
-        loginfo.open("loginfo.txt", std::ios::app);
         std::ifstream file(filename);
 
         if (!file.is_open())
@@ -662,8 +666,6 @@ public:
     // 将虚拟体数据写入文件
     bool writeVirtualObjectsToFile(const std::string &filename)
     {
-        std::ofstream loginfo;
-        loginfo.open("loginfo.txt", std::ios::app);
         std::ofstream file(filename);
         if (!file.is_open())
         {
@@ -722,7 +724,7 @@ std::string FormatTime(time_t time)
     // 返回格式化后的时间字符串
     return ss.str();
 }
-bool isNumber(const std::string &str)
+bool IsNumber(const std::string &str)
 {
     try
     {
@@ -736,8 +738,6 @@ bool isNumber(const std::string &str)
 }
 void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename)
 {
-    std::ofstream loginfo;
-    loginfo.open("loginfo.txt", std::ios::app);
     std::ifstream file(filename);
     if (file.is_open())
     {
@@ -770,8 +770,6 @@ void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &fil
 
 void WriteMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename)
 {
-    std::ofstream loginfo;
-    loginfo.open("loginfo.txt", std::ios::app);
     std::ofstream file(filename);
     if (file.is_open())
     {
@@ -1006,8 +1004,6 @@ void PrintMapByRange(const std::vector<std::vector<char>> &map, int rowIdx, int 
 }
 void AppendMapToFile(const std::string &filename)
 {
-    std::ofstream loginfo;
-    loginfo.open("loginfo.txt", std::ios::app);
     std::ofstream file(filename, std::ios::app);
     if (file.is_open())
     {
@@ -1106,6 +1102,17 @@ bool OpenANSIControlChar()
     }
     return true;
 }
+std::vector<std::string> split(const std::string &str, char delimiter)
+{
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delimiter))
+    {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
 int DetectMap(const std::vector<std::vector<char>> &map, int x, int y, char status, char symbol)
 {
 
@@ -1155,6 +1162,8 @@ void InitTestEnv()
     std::cout.tie(nullptr);
     system("mode con cols=126 lines=30");
 
+    // 禁用窗口最大化和最小化和动态调整窗口大小
+    SetWindowLongPtrA(GetConsoleWindow(), GWL_STYLE, GetWindowLongPtrA(GetConsoleWindow(), GWL_STYLE) & ~WS_SIZEBOX & ~WS_MAXIMIZEBOX & ~WS_MINIMIZEBOX);
     SetConsoleWindowPosition(-1, -1);
 
     cstyle.SetFont(L"Consolas", 18);
@@ -1169,8 +1178,6 @@ int CoreCircle(void)
     // 性能日志
     std::ofstream fpsdata;
     fpsdata.open("fpsdata.txt", std::ios::out | std::ios::trunc);
-    std::ofstream loginfo;
-    loginfo.open("loginfo.txt", std::ios::out | std::ios::app);
 
     // 创建地图
     std::vector<std::vector<char>> map;
@@ -1194,17 +1201,17 @@ int CoreCircle(void)
         FPS.resetStartTime();
         if (frameCount % 10 == 0)
         {
-            infowindow.put_In_Text(0, 0, "|frame:" + std::to_string(frameCount) + " ");
-            infowindow.put_In_Text(0, 1, "|FPS:" + std::to_string(FPS.getFpsValue()) + " ");
-            infowindow.put_In_Text(0, 2, "|uselesscir:" + std::to_string(FPS.getUselesscir()) + " ");
-            infowindow.put_In_Text(0, 3, "|player1state:" + std::to_string(em.entities[0].getStatus()) + " ");
-            infowindow.put_In_Text(0, 4, "|rolindex:" + std::to_string(rolindex) + " ");
-            infowindow.put_In_Text(0, 5, "|colindex:" + std::to_string(colindex) + " ");
-            infowindow.put_In_Text(0, 6, "|entities:" + std::to_string(em.entities.size()) + " ");
-            infowindow.put_In_Text(0, 7, "|en1x:" + std::to_string(em.entities[0].getX()) + " ");
-            infowindow.put_In_Text(0, 8, "|en1y:" + std::to_string(em.entities[0].getY()) + " ");
-            infowindow.put_In_Text(0, 9, "|virUsedNum:" + std::to_string(vom.virUsedNum) + " ");
-            infowindow.put_In_Text(0, 10, "|en1hp:" + std::to_string(em.entities[0].getHp()) + " ");
+            infowindow.put_In_Text(0, 0, "|frame:" + std::to_string(frameCount));
+            infowindow.put_In_Text(0, 1, "|FPS:" + std::to_string(FPS.getFpsValue()));
+            infowindow.put_In_Text(0, 2, "|uselesscir:" + std::to_string(FPS.getUselesscir()));
+            infowindow.put_In_Text(0, 3, "|player1state:" + std::to_string(em.entities[0].getStatus()));
+            infowindow.put_In_Text(0, 4, "|rolindex:" + std::to_string(rolindex));
+            infowindow.put_In_Text(0, 5, "|colindex:" + std::to_string(colindex));
+            infowindow.put_In_Text(0, 6, "|entities:" + std::to_string(em.entities.size()));
+            infowindow.put_In_Text(0, 7, "|en1x:" + std::to_string(em.entities[0].getX()));
+            infowindow.put_In_Text(0, 8, "|en1y:" + std::to_string(em.entities[0].getY()));
+            infowindow.put_In_Text(0, 9, "|virUsedNum:" + std::to_string(vom.virUsedNum));
+            infowindow.put_In_Text(0, 10, "|en1hp:" + std::to_string(em.entities[0].getHp()));
         }
         infowindow.display_Window_Str();
 
@@ -1323,6 +1330,29 @@ int CoreCircle(void)
                         }
                     }
                     vom.addObject(em.entities[0].getX(), em.entities[0].getY(), 0, 0, 0, 100, 0, 100, 0);
+                }
+            }
+            if (GetAsyncKeyState(VK_RSHIFT) & 0x8000)
+            {
+                if (map[(em.entities[1].getX())][(em.entities[1].getY())] == '0')
+                {
+                    {
+                        int virIndex = 0;
+                        int virUsedNumFixed = vom.virUsedNum;
+                        for (auto &virobj : vom.objects)
+                        {
+                            if (virobj.exist == 1 && virobj.x == em.entities[1].getX() && virobj.y == em.entities[1].getY())
+                            {
+                                goto stopbomb;
+                            }
+                            if (virIndex == virUsedNumFixed)
+                            {
+                                break;
+                            }
+                            virIndex++;
+                        }
+                    }
+                    vom.addObject(em.entities[1].getX(), em.entities[1].getY(), 0, 0, 0, 100, 0, 100, 0);
                 }
             }
         stopbomb:
@@ -1508,7 +1538,7 @@ int CoreCircle(void)
         { // 对虚拟体表vom进行遍历
             int virIndex = 0;
             int virUsedNumFixed = vom.virUsedNum;
-
+#pragma omp parallel for num_threads(12)
             for (auto &virobj : vom.objects)
             {
                 if (virobj.exist == 1)
@@ -1586,6 +1616,10 @@ int CoreCircle(void)
                                 if (em.entities[index].getX() == virobj.x && em.entities[index].getY() == virobj.y)
                                 {
                                     em.entities[index].setHp(em.entities[index].getHp() - virobj.att);
+                                    if (em.entities[index].getHp() <= 0)
+                                    {
+                                        em.entities[index].setHp(0);
+                                    }
                                 }
                             }
                             virobj.len--;
@@ -1607,15 +1641,47 @@ int CoreCircle(void)
                 }
             }
         }
+
+        { // 胜负推断
+            if (em.entities[0].getHp() <= 0)
+            {
+                CONSOLE_SCREEN_BUFFER_INFO CSBI;
+                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &CSBI);
+                WindowDisplay resultwindow;
+                resultwindow.init_New_Window((CSBI.dwSize.X - 40) / 2, (CSBI.dwSize.Y - 5) / 2, 40, 5, 0x00, 0xc);
+                resultwindow.cui_Basic_Fill(' ');
+                resultwindow.put_In_Text(0, 1, "           Player 1 Win!");
+                resultwindow.display_Window_Str();
+                Sleep(2000);
+                em.entities[0].setHp(100);
+                em.entities[1].setHp(100);
+                break;
+            }
+            if (em.entities[1].getHp() <= 0)
+            {
+                CONSOLE_SCREEN_BUFFER_INFO CSBI;
+                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &CSBI);
+                WindowDisplay resultwindow;
+                resultwindow.init_New_Window((CSBI.dwSize.X - 40) / 2, (CSBI.dwSize.Y - 5) / 2, 40, 5, 0x00, 0xc);
+                resultwindow.cui_Basic_Fill(' ');
+                resultwindow.put_In_Text(0, 1, "           Player 0 Win!");
+                resultwindow.display_Window_Str();
+                Sleep(2000);
+                em.entities[0].setHp(100);
+                em.entities[1].setHp(100);
+                break;
+            }
+        }
         SetPosition(0, 1);
         PrintMapByRow(&map);
         // PrintMapByRange(map, em.entities[0].getX(), em.entities[0].getY()); // PrintMapByRow(&map, colindex);
         FPS.getFpsLimited();
-        fpsdata << frameCount << "|" << FPS.getFpsValue() << "|" << FPS.uselesscir << std::endl;
+        if (SETITEM_fpsInfoFile)
+            fpsdata << frameCount << "|" << FPS.getFpsValue() << "|" << FPS.uselesscir << std::endl;
     }
 
-    int num = map.size();
-    std::cout << num << std::endl;
+    // int num = map.size();
+    // std::cout << num << std::endl;
 
     // 文件存储操作
     WriteMapToFile(map, "areamap.txt");
@@ -1624,25 +1690,43 @@ int CoreCircle(void)
         vom.writeVirtualObjectsToFile("virtualobjects.txt");
     fpsdata.close();
     loginfo.close();
-    system("pause");
     return 0;
 }
-void InitSetInfo(void)
+void ReadSetInfoFromFile(void)
 {
-    setCoreWindowItem.push_back("窗口置顶");
-    setCoreWindowSelect.push_back("Y");
-    setCoreWindowItem.push_back("文件读写");
-    setCoreWindowSelect.push_back("Y");
-    setCoreWindowItem.push_back("设置项a");
-    setCoreWindowSelect.push_back("Y");
-    setCoreWindowItem.push_back("设置项b");
-    setCoreWindowSelect.push_back("Y");
-    setCoreWindowItem.push_back("设置项c");
-    setCoreWindowSelect.push_back("Y");
-    setCoreWindowItem.push_back("设置项d");
-    setCoreWindowSelect.push_back("Y");
-    setCoreWindowItem.push_back("设置项e");
-    setCoreWindowSelect.push_back("100");
+    std::ifstream file("settings.txt");
+    if (file.is_open())
+    {
+        std::string line;
+        while (std::getline(file, line))
+        {
+            std::vector<std::string> fields = split(line, ':');
+            if (fields.size() == 2)
+            {
+                setCoreWindowItem.push_back(fields[0]);
+                setCoreWindowSelect.push_back(fields[1]);
+            }
+            else
+            {
+                // 无效的设置行
+                loginfo << FormatTime(time(nullptr)) << "Invalid settings line: " << line << std::endl;
+            }
+        }
+        file.close();
+    }
+    EffectSetInfo();
+}
+void SaveSetInfoToFile(void)
+{
+    std::ofstream file("settings.txt");
+    if (file.is_open())
+    {
+        for (size_t i = 0; i < setCoreWindowItem.size(); i++)
+        {
+            file << setCoreWindowItem[i] << ":" << setCoreWindowSelect[i] << std::endl;
+        }
+        file.close();
+    }
 }
 void SetModule(void)
 {
@@ -1764,7 +1848,7 @@ void SetModule(void)
         {
             bottom_pressed_permisson = false;
             changeState = true;
-            if (isNumber(setCoreWindowSelect[highlightItem]))
+            if (IsNumber(setCoreWindowSelect[highlightItem]))
             {
                 int temp = std::stoi(setCoreWindowSelect[highlightItem]);
                 temp = temp - 10;
@@ -1779,7 +1863,7 @@ void SetModule(void)
         {
             bottom_pressed_permisson = false;
             changeState = true;
-            if (isNumber(setCoreWindowSelect[highlightItem]))
+            if (IsNumber(setCoreWindowSelect[highlightItem]))
             {
                 int temp = std::stoi(setCoreWindowSelect[highlightItem]);
                 temp--;
@@ -1794,7 +1878,7 @@ void SetModule(void)
         {
             bottom_pressed_permisson = false;
             changeState = true;
-            if (isNumber(setCoreWindowSelect[highlightItem]))
+            if (IsNumber(setCoreWindowSelect[highlightItem]))
             {
                 int temp = std::stoi(setCoreWindowSelect[highlightItem]);
                 temp = temp + 10;
@@ -1809,7 +1893,7 @@ void SetModule(void)
         {
             bottom_pressed_permisson = false;
             changeState = true;
-            if (isNumber(setCoreWindowSelect[highlightItem]))
+            if (IsNumber(setCoreWindowSelect[highlightItem]))
             {
                 int temp = std::stoi(setCoreWindowSelect[highlightItem]);
                 temp++;
@@ -1835,6 +1919,29 @@ void SetModule(void)
             bottom_pressed_permisson = true;
         }
     }
+
+    EffectSetInfo();
+}
+void EffectSetInfo()
+{
+
+    if (setCoreWindowSelect[0] == "Y")
+    {
+        SETITEM_windowPreDisplay = true;
+    }
+    else if (setCoreWindowSelect[0] == "N")
+    {
+        SETITEM_windowPreDisplay = false;
+    }
+    if (setCoreWindowSelect[1] == "Y")
+    {
+        SETITEM_fpsInfoFile = true;
+    }
+    else if (setCoreWindowSelect[1] == "N")
+    {
+        SETITEM_fpsInfoFile = false;
+    }
+    SETITEM_limitedFps = std::stoi(setCoreWindowSelect[2]);
 }
 void InitMainDrive(void)
 {
@@ -1858,7 +1965,7 @@ void InitMainDrive(void)
     SetConsoleOutputCP(65001);
     SetConsoleCP(65001);
 
-    // int cols = WIN_MENU_LONAXIS; // 指定列数
+    // int cols = WIN_MENU_LONAXIS;      // 指定列数
     // int lines = WIN_MENU_HORAXIS - 1; // 指定行数
     // std::string command = "mode con cols=" + std::to_string(cols) + " lines=" + std::to_string(lines);
     // system(command.c_str());
@@ -1879,14 +1986,21 @@ void InitMainDrive(void)
 }
 int main(void)
 {
-    InitSetInfo();
-    InitMainDrive();
+    ReadSetInfoFromFile();
     bool is_esc_permitted = true;
+    InitMainDrive();
 printMenu_:
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    int windowLeftPointX;
+    windowLeftPointX = (csbi.dwSize.X - WIN_MENU_LONAXIS) / 2;
+    int windowLeftPointY;
+    windowLeftPointY = (csbi.dwSize.Y - WIN_MENU_HORAXIS) / 2;
+    loginfo << "windowLeftPointX: " << windowLeftPointX << std::endl;
     for (int index = 1; index < 13; index++)
     {
-        SetPosition(1, index);
-        for (int indexx = 1; indexx < WIN_MENU_LONAXIS - 1; indexx++)
+        std::cout << "\033[" << windowLeftPointY + index << ";" << windowLeftPointX + 1 << "H";
+        for (int indexx = 1; indexx < WIN_MENU_LONAXIS; indexx++)
         {
             std::cout << "\e[106m"
                       << " "
@@ -1896,69 +2010,119 @@ printMenu_:
     }
     for (int index = 14; index < WIN_MENU_HORAXIS - 1; index++)
     {
-        SetPosition(1, index);
-        for (int indexx = 1; indexx < WIN_MENU_LONAXIS - 1; indexx++)
+        std::cout << "\033[" << windowLeftPointY + index << ";" << windowLeftPointX + 1 << "H";
+        for (int indexx = 1; indexx < WIN_MENU_LONAXIS; indexx++)
         {
             std::cout << " ";
         }
         std::cout.flush();
     }
-
     std::cout << "\033[0m";
-    SetPosition(0, 0);
-    std::string logotxt = R"(
-           ___           ___                       ___     
-          /\  \         /\  \          ___        /\  \
-         /  \  \       /  \  \        /\  \      /  \  \
-        / /\ \  \     / /\ \  \       \ \  \    / /\ \  \
-       /  \ \ \__\   _\ \ \ \  \      /  \__\  /  \ \ \  \
-      / /\ \ \ |__| /\ \ \ \ \__\  __/ /\/__/ / /\ \ \ \__\
-      \ \ \ \/ /  / \ \ \ \ \/__/ /\/ /  /    \/__\ \ \/__/
-       \ \ \  /  /   \ \ \ \__\   \  /__/          \ \__\
-        \ \/ /  /     \ \/ /  /    \ \__\           \/__/  
-         \  /__/       \  /  /      \/__/                  
-          ~~            \/__/                              
-     )";
-    std::cout << "\033[1;32m\033[1m\033[5m\e[106m" << logotxt << "\033[0m";
+
+    std::cout << "\033[" << windowLeftPointY + 1 << ";" << windowLeftPointX << "H";
+    std::string logoStyle[12] = {
+
+        "           ___           ___                       ___     ",
+        "          /\\  \\         /\\  \\          ___        /\\  \\ ",
+        "         /  \\  \\       /  \\  \\        /\\  \\      /  \\  \\ ",
+        "        / /\\ \\  \\     / /\\ \\  \\       \\ \\  \\    / /\\ \\  \\ ",
+        "       /  \\ \\ \\__\\   _\\ \\ \\ \\  \\      /  \\__\\  /  \\ \\ \\  \\ ",
+        "      / /\\ \\ \\ |__| /\\ \\ \\ \\ \\__\\  __/ /\\/__/ / /\\ \\ \\ \\__\\ ",
+        "      \\ \\ \\ \\/ /  / \\ \\ \\ \\ \\/__/ /\\/ /  /    \\/__\\ \\ \\/__/",
+        "       \\ \\ \\  /  /   \\ \\ \\ \\__\\   \\  /__/          \\ \\__\\ ",
+        "        \\ \\/ /  /     \\ \\/ /  /    \\ \\__\\           \\/__/",
+        "         \\  /__/       \\  /  /      \\/__/                  ",
+        "          ~~            \\/__/               ",
+        "                                                           ",
+    };
+    for (int index = 0; index < 12; index++)
+        std::cout << "\033[" << windowLeftPointX << "G"
+                  << "\033[38;5;205m\033[1m\e[106m" << logoStyle[index] << "\033[0m"
+                  << "\033[1E";
     std::cout.flush();
 
-    SetPosition(8, 12);
+    std::cout << "\033[" << windowLeftPointY + 13 << ";" << windowLeftPointX + 1 << "H";
     std::cout << "\033[33m\033[1m\033[46m"
-              << "\n-------------------" << VERSION_TXT << "---------------------"
+              << "-------------------" << VERSION_TXT << "---------------------"
               << "\033[0m"
               << "\033[36m\033[1m"
-              << "\n\n    \t\t\t   1. 测试\n\n    \t\t\t   2. 关于\n\n    \t\t\t   S. 设置\n\n    \t\t\t   Q. 退出"
+              << "\e[2E\e[" << windowLeftPointX + (WIN_MENU_LONAXIS - 8) / 2 << "G"
+              << "1.测试"
+              << "\e[2E\e[" << windowLeftPointX + (WIN_MENU_LONAXIS - 8) / 2 << "G"
+              << "2.关于"
+              << "\e[2E\e[" << windowLeftPointX + (WIN_MENU_LONAXIS - 8) / 2 << "G"
+              << "S.设置"
+              << "\e[2E\e[" << windowLeftPointX + (WIN_MENU_LONAXIS - 8) / 2 << "G"
+              << "Q.退出"
               << "\033[0m";
     std::cout.flush();
 
-    SetPosition(0, 0);
+    std::cout << "\033[" << windowLeftPointY + 0 << ";" << windowLeftPointX << "H";
     for (int i = 0; i <= WIN_MENU_LONAXIS - 1; i++)
         std::cout << "\033[32m" << '=' << "\033[0m";
     std::cout.flush();
 
-    SetPosition(0, WIN_MENU_HORAXIS - 2);
+    std::cout << "\033[" << windowLeftPointY + WIN_MENU_HORAXIS - 2 << ";" << windowLeftPointX << "H";
     for (int i = 0; i <= WIN_MENU_LONAXIS - 1; i++)
         std::cout << "\033[32m" << '=' << "\033[0m";
     std::cout.flush();
 
     for (int i = 0; i <= WIN_MENU_HORAXIS - 2; i++)
     {
-        SetPosition(0, i);
+        std::cout << "\033[" << windowLeftPointY + i << ";" << windowLeftPointX << "H";
         std::cout << "|";
         std::cout.flush();
     }
     for (int i = 0; i <= WIN_MENU_HORAXIS - 2; i++)
     {
-        SetPosition(WIN_MENU_LONAXIS - 1, i);
+        std::cout << "\033[" << windowLeftPointY + i << ";" << windowLeftPointX + WIN_MENU_LONAXIS << "H";
         std::cout << "|";
         std::cout.flush();
     }
-
+    int tempWindowLeftPointX = csbi.dwSize.X;
+    int tempWindowLeftPointY = csbi.dwSize.Y;
     while (true)
     {
+        Sleep(20);
+        if (time(0) % 1 == 0)
+        {
+            GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+            if ((csbi.dwSize.X > WIN_MENU_LONAXIS + 1 && tempWindowLeftPointX <= WIN_MENU_LONAXIS + 1) || (csbi.dwSize.Y > WIN_MENU_HORAXIS && tempWindowLeftPointY <= WIN_MENU_HORAXIS))
+            {
+                system("cls");
+                goto printMenu_;
+            }
+            if (csbi.dwSize.X <= WIN_MENU_LONAXIS + 1 || csbi.dwSize.Y < WIN_MENU_HORAXIS)
+            {
+                tempWindowLeftPointX = csbi.dwSize.X;
+                tempWindowLeftPointY = csbi.dwSize.Y;
+                if (csbi.dwSize.Y <= 5)
+                {
+                    system("cls");
+                    continue;
+                }
+                system("cls");
+                WindowDisplay warningWindow;
+                warningWindow.init_New_Window((csbi.dwSize.X - 26) / 2, (csbi.dwSize.Y - 5) / 2, 26, 5, 0x0, 0xc);
+                warningWindow.cui_Basic_Fill(' ');
+                warningWindow.put_In_Text(0, 1, " Window Size is Invalid");
+                warningWindow.display_Window_Str();
+                continue;
+            }
+
+            if (csbi.dwSize.X != tempWindowLeftPointX || csbi.dwSize.Y != tempWindowLeftPointY)
+            {
+                tempWindowLeftPointX = csbi.dwSize.X;
+                tempWindowLeftPointY = csbi.dwSize.Y;
+                system("cls");
+                goto printMenu_;
+            }
+        }
         if (GetAsyncKeyState('1') & 0x8000) // 检查1键是否被按下
         {
             CoreCircle();
+            system("cls");
+            goto printMenu_;
         }
         if (GetAsyncKeyState('2') & 0x8000) // 检查2键是否被按下
         {
@@ -1995,6 +2159,6 @@ printMenu_:
             is_esc_permitted = true;
         }
     }
-
+    SaveSetInfoToFile();
     return 0;
 }
