@@ -1,5 +1,6 @@
-#define VERSION_TXT " 6.1.1 - PRE - 123102P2 "
+#define VERSION_TXT " 6.1.1 - PRE - 010118P1 "
 #include <windows.h>
+#include <tlhelp32.h>
 #include <vector>
 #include <array>
 #include <iostream>
@@ -11,6 +12,12 @@
 
 #define WIN_MENU_LONAXIS 64 // 横长
 #define WIN_MENU_HORAXIS 25 // 纵长
+#define TEST_LONAXIS 126
+#define TEST_HORAXIS 30
+#define TIT_MAIN "BSIF | MAIN "
+#define TIT_SET "BSIF | SET "
+#define TIT_TEST "BSIF | TEST "
+
 HANDLE hOutStd;
 HWND hwnd;
 
@@ -21,6 +28,7 @@ std::ofstream loginfo("loginfo.txt");
 bool SETITEM_windowPreDisplay = true;
 bool SETITEM_fpsInfoFile = true;
 int SETITEM_limitedFps = 60;
+int SETITEM_TERENV = -1;
 
 std::string FormatTime(time_t time);
 bool IsNumber(const std::string &str);
@@ -45,6 +53,10 @@ void SetModule(void);
 void EffectSetInfo();
 void InitMainDrive(void);
 void InitMainDrive(void);
+BOOL CALLBACK EnumWindowsProc(HWND _hwnd, LPARAM lParam);
+bool TerminalCheck(DWORD dwPid, HWND _hwnd);
+bool ExistProcess(LPCSTR lpName);
+std::string ConvertWideCharToMultiByte(const WCHAR *wideCharString);
 
 //------------ BSIF 6 起步版本 --------------
 // 该版本主要使用STL编写图像显示工具和工程基本数据结构类
@@ -85,3 +97,6 @@ void InitMainDrive(void);
 // (6.1.1 - preRelease - 123001P1):使用转义字符序列重写了主菜单界面
 // (6.1.1 - preRelease - 123102P1):修复了BFX-2023-1212C1-Y:增加了主菜单窗口位置自适应支持,并在无法适应时作出提示
 // (6.1.1 - preRelease - 123102P2):修复了BFX-2023-1230A1-Y:修复了窗口最大化切换时,窗口自适应失效的问题
+// (6.1.1 - preRelease - 123118P1):为主测试函数增加了窗口自适应功能
+// (6.1.1 - preRelease - 123118P2):尝试获取程序运行环境,并与WindowsTerminal进行信息交互
+// (6.1.1 - preRelease - 010118P1):将环境判断嵌入初始化函数中,程序同时兼任终端和控制台环境

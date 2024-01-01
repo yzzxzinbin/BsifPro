@@ -1113,6 +1113,78 @@ std::vector<std::string> split(const std::string &str, char delimiter)
     }
     return tokens;
 }
+std::string ConvertWideCharToMultiByte(const WCHAR *wideCharString)
+{
+    int bufferSize = WideCharToMultiByte(CP_UTF8, 0, wideCharString, -1, nullptr, 0, nullptr, nullptr);
+    if (bufferSize == 0)
+    {
+        return ""; // 转换失败
+    }
+    static std::string charString(bufferSize, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wideCharString, -1, &charString[0], bufferSize, nullptr, nullptr);
+    return charString;
+}
+bool ExistProcess(LPCSTR lpName) // 判断是否存在指定进程
+{
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (INVALID_HANDLE_VALUE == hSnapshot)
+    {
+        return false;
+    }
+    PROCESSENTRY32 pe = {sizeof(pe)};
+    BOOL fOk;
+    for (fOk = Process32First(hSnapshot, &pe); fOk; fOk = Process32Next(hSnapshot, &pe))
+    {
+
+        if (!stricmp(pe.szExeFile, lpName))
+        {
+            CloseHandle(hSnapshot);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool TerminalCheck(DWORD dwPid, HWND _hwnd)
+{
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (INVALID_HANDLE_VALUE == hSnapshot)
+    {
+        return false;
+    }
+    PROCESSENTRY32 pe = {sizeof(pe)};
+    BOOL fOk;
+    for (fOk = Process32First(hSnapshot, &pe); fOk; fOk = Process32Next(hSnapshot, &pe))
+    {
+        if (!stricmp(pe.szExeFile, "WindowsTerminal.exe") && pe.th32ProcessID == dwPid)
+        {
+            CloseHandle(hSnapshot);
+            WCHAR title[MAX_PATH];
+            GetWindowTextW(_hwnd, title, MAX_PATH);
+            std::string convertedTitle = ConvertWideCharToMultiByte(title);
+            if (strcmp(convertedTitle.c_str(), _pgmptr) && strcmp(convertedTitle.c_str(), TIT_MAIN))
+            {
+                return false;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+BOOL CALLBACK EnumWindowsProc(HWND _hwnd, LPARAM lParam)
+{
+    DWORD pid;
+    GetWindowThreadProcessId(_hwnd, &pid);
+    if (TerminalCheck(pid, _hwnd))
+    {
+        // printf("Terminal Found! pid=%ld hwnd=%p\n", pid, _hwnd);
+        hwnd = _hwnd;
+        SETITEM_TERENV = TRUE;
+        setCoreWindowSelect[3] = "Y";
+        return FALSE;
+    }
+    return TRUE;
+}
 int DetectMap(const std::vector<std::vector<char>> &map, int x, int y, char status, char symbol)
 {
 
@@ -1160,7 +1232,10 @@ void InitTestEnv()
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
     std::cout.tie(nullptr);
-    system("mode con cols=126 lines=30");
+    cstyle.SetConTitle(TIT_TEST);
+
+    if (SETITEM_TERENV == 0)
+        system("mode con cols=126 lines=30");
 
     // 禁用窗口最大化和最小化和动态调整窗口大小
     SetWindowLongPtrA(GetConsoleWindow(), GWL_STYLE, GetWindowLongPtrA(GetConsoleWindow(), GWL_STYLE) & ~WS_SIZEBOX & ~WS_MAXIMIZEBOX & ~WS_MINIMIZEBOX);
@@ -1195,10 +1270,32 @@ int CoreCircle(void)
     infowindow.init_New_Window(96, 1, 30, 29, 0x0, 0xb);
     infowindow.cui_Basic_Fill(' ');
 
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    WindowDisplay warningWindow;
+
     // 核心循环,循环中非阻塞读取键盘输入,然后使用switch对awsd四个按键进行响应,即改变相应的地图索引值
     for (frameCount = 0; true; frameCount++)
     {
         FPS.resetStartTime();
+        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+        if (csbi.dwSize.X != TEST_LONAXIS || csbi.dwSize.Y != TEST_HORAXIS)
+        {
+            system("cls");
+            warningWindow.init_New_Window((csbi.dwSize.X - 30) / 2, (csbi.dwSize.Y - 5) / 2, 30, 5, 0x0, 0xc);
+            warningWindow.cui_Basic_Fill(' ');
+            warningWindow.put_In_Text(0, 0, "    Window Size Must Be");
+            warningWindow.put_In_Text(0, 1, "       (126 x 30)");
+            warningWindow.display_Window_Str();
+
+            Sleep(50);
+            continue;
+        }
+        if (frameCount % 20 == 0)
+        {
+            infowindow.init_New_Window(96, 1, 30, 29, 0x0, 0xb);
+            infowindow.cui_Basic_Fill(' ');
+        }
         if (frameCount % 10 == 0)
         {
             infowindow.put_In_Text(0, 0, "|frame:" + std::to_string(frameCount));
@@ -1731,6 +1828,7 @@ void SaveSetInfoToFile(void)
 void SetModule(void)
 {
     system("cls");
+    cstyle.SetConTitle(TIT_SET);
     CONSOLE_SCREEN_BUFFER_INFO CSBI;
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &CSBI);
     WindowDisplay setCoreWindow;
@@ -1942,18 +2040,40 @@ void EffectSetInfo()
         SETITEM_fpsInfoFile = false;
     }
     SETITEM_limitedFps = std::stoi(setCoreWindowSelect[2]);
+    // if(setCoreWindowSelect[3] == "Y")
+    // {
+    //     SETITEM_TERENV = 1;
+    // }else if(setCoreWindowSelect[3] == "N")
+    // {
+    //     SETITEM_TERENV = 0;
+    // }
 }
 void InitMainDrive(void)
 {
+    cstyle.SetFont(L"新宋体", 18);
+    cstyle.SetConTitle(TIT_MAIN);
     // 定义窗口句柄变量,包括窗口句柄,标准输出句柄等
-    hwnd = GetConsoleWindow();
+    if (ExistProcess("WindowsTerminal.exe"))
+    {
+        EnumWindows(EnumWindowsProc, 0);
+    }
+    else
+    {
+        hwnd = GetConsoleWindow();
+        SETITEM_TERENV = 0;
+        setCoreWindowSelect[3] = "N";
+    }
+    if (!hwnd || hwnd == INVALID_HANDLE_VALUE)
+    {
+        hwnd = GetForegroundWindow();
+        SETITEM_TERENV = -1;
+        setCoreWindowSelect[3] = "UNDEFINE";
+    }
     hOutStd = GetStdHandle(STD_OUTPUT_HANDLE);
 
     SetConsoleWindowPosition(-1, -1);
     // 开启ANSI转义序列功能
     OpenANSIControlChar();
-    cstyle.SetFont(L"新宋体", 22);
-    cstyle.SetConTitle("BSIF | MAIN");
 
     // 关闭光标显示
     CONSOLE_CURSOR_INFO cur_info;
@@ -1965,10 +2085,13 @@ void InitMainDrive(void)
     SetConsoleOutputCP(65001);
     SetConsoleCP(65001);
 
-    // int cols = WIN_MENU_LONAXIS;      // 指定列数
-    // int lines = WIN_MENU_HORAXIS - 1; // 指定行数
-    // std::string command = "mode con cols=" + std::to_string(cols) + " lines=" + std::to_string(lines);
-    // system(command.c_str());
+    if (SETITEM_TERENV == 0)
+    {
+        int cols = TEST_LONAXIS;  // 指定列数
+        int lines = TEST_HORAXIS; // 指定行数
+        std::string command = "mode con cols=" + std::to_string(cols) + " lines=" + std::to_string(lines);
+        system(command.c_str());
+    }
 
     // SMALL_RECT windowSize = {0, 0, WIN_MENU_LONAXIS - 1, WIN_MENU_HORAXIS - 2};
     // SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &windowSize);
@@ -1993,9 +2116,9 @@ printMenu_:
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
     int windowLeftPointX;
-    windowLeftPointX = (csbi.dwSize.X - WIN_MENU_LONAXIS) / 2;
+    windowLeftPointX = (csbi.dwSize.X - WIN_MENU_LONAXIS + 1) / 2;
     int windowLeftPointY;
-    windowLeftPointY = (csbi.dwSize.Y - WIN_MENU_HORAXIS) / 2;
+    windowLeftPointY = (csbi.dwSize.Y - WIN_MENU_HORAXIS + 3) / 2;
     loginfo << "windowLeftPointX: " << windowLeftPointX << std::endl;
     for (int index = 1; index < 13; index++)
     {
@@ -2122,6 +2245,7 @@ printMenu_:
         {
             CoreCircle();
             system("cls");
+            cstyle.SetConTitle(TIT_MAIN);
             goto printMenu_;
         }
         if (GetAsyncKeyState('2') & 0x8000) // 检查2键是否被按下
@@ -2142,6 +2266,7 @@ printMenu_:
         if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下
         {
             SetModule();
+            cstyle.SetConTitle(TIT_MAIN);
         }
         if (GetAsyncKeyState('Q') & 0x8000) // 检查Q键是否被按下
         {
