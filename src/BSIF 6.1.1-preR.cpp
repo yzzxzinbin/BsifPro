@@ -666,7 +666,7 @@ public:
     // 将虚拟体数据写入文件
     bool writeVirtualObjectsToFile(const std::string &filename)
     {
-        std::ofstream file(filename);
+        std::ofstream file(filename, std::ios::out | std::ios::trunc);
         if (!file.is_open())
         {
             loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
@@ -1234,7 +1234,7 @@ void InitTestEnv()
     std::cout.tie(nullptr);
     cstyle.SetConTitle(TIT_TEST);
 
-    if (SETITEM_TERENV == 0)
+    if (SETITEM_TERENV != 1)
         system("mode con cols=126 lines=30");
 
     // 禁用窗口最大化和最小化和动态调整窗口大小
@@ -1273,29 +1273,38 @@ int CoreCircle(void)
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
     WindowDisplay warningWindow;
+    int tempWindowX = csbi.dwSize.X;
+    int tempWindowY = csbi.dwSize.Y;
 
     // 核心循环,循环中非阻塞读取键盘输入,然后使用switch对awsd四个按键进行响应,即改变相应的地图索引值
     for (frameCount = 0; true; frameCount++)
     {
         FPS.resetStartTime();
         GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-        if (csbi.dwSize.X != TEST_LONAXIS || csbi.dwSize.Y != TEST_HORAXIS)
+        if ((tempWindowX != TEST_LONAXIS && csbi.dwSize.X == TEST_LONAXIS) ||
+            (tempWindowY != TEST_HORAXIS && csbi.dwSize.Y == TEST_HORAXIS))
         {
-            system("cls");
-            warningWindow.init_New_Window((csbi.dwSize.X - 30) / 2, (csbi.dwSize.Y - 5) / 2, 30, 5, 0x0, 0xc);
-            warningWindow.cui_Basic_Fill(' ');
-            warningWindow.put_In_Text(0, 0, "    Window Size Must Be");
-            warningWindow.put_In_Text(0, 1, "       (126 x 30)");
-            warningWindow.display_Window_Str();
-
-            Sleep(50);
-            continue;
-        }
-        if (frameCount % 20 == 0)
-        {
+            tempWindowX = csbi.dwSize.X;
+            tempWindowY = csbi.dwSize.Y;
+            SetConsoleWindowPosition(-1, -1);
             infowindow.init_New_Window(96, 1, 30, 29, 0x0, 0xb);
             infowindow.cui_Basic_Fill(' ');
         }
+        if (csbi.dwSize.X != TEST_LONAXIS || csbi.dwSize.Y != TEST_HORAXIS)
+        {
+            system("cls");
+            tempWindowX = csbi.dwSize.X;
+            tempWindowY = csbi.dwSize.Y;
+            warningWindow.init_New_Window((csbi.dwSize.X - 30) / 2, (csbi.dwSize.Y - 5) / 2, 30, 5, 0x0, 0xc);
+            warningWindow.cui_Basic_Fill(' ');
+            warningWindow.put_In_Text(0, 0, "    Window Size Must Be");
+            warningWindow.put_In_Text(0, 1, "        (126 x 30)");
+            warningWindow.put_In_Text(0, 2, "     Now Is :" + std::to_string(csbi.dwSize.X) + " x " + std::to_string(csbi.dwSize.Y) + " ");
+            warningWindow.display_Window_Str();
+            Sleep(50);
+            continue;
+        }
+
         if (frameCount % 10 == 0)
         {
             infowindow.put_In_Text(0, 0, "|frame:" + std::to_string(frameCount));
@@ -1323,6 +1332,29 @@ int CoreCircle(void)
                     em.entities[0].setY(-2);
                 }
                 em.entities[0].setStatus('w');
+                {
+                    int virIndex = 0;
+                    int virUsedNumFixed = vom.virUsedNum;
+#pragma omp parallel for num_threads(12)
+                    for (auto &virobj : vom.objects)
+                    {
+                        if (virobj.exist == 1)
+                        {
+                            if (virobj.attribute == 0)
+                            {
+                                if (virobj.y == em.entities[0].getY() && virobj.x == em.entities[0].getX())
+                                {
+                                    virobj.dir = em.entities[0].getStatus();
+                                }
+                            }
+                            virIndex++;
+                        }
+                        if (virIndex == virUsedNumFixed)
+                        {
+                            break;
+                        }
+                    }
+                }
             }
             if (GetAsyncKeyState('S') & 0x8000) // 检查S键是否被按下，并且地图数据中相应位置为1
             {
@@ -1333,6 +1365,29 @@ int CoreCircle(void)
                     em.entities[0].setY(-1);
                 }
                 em.entities[0].setStatus('s');
+                {
+                    int virIndex = 0;
+                    int virUsedNumFixed = vom.virUsedNum;
+#pragma omp parallel for num_threads(12)
+                    for (auto &virobj : vom.objects)
+                    {
+                        if (virobj.exist == 1)
+                        {
+                            if (virobj.attribute == 0)
+                            {
+                                if (virobj.y == em.entities[0].getY() && virobj.x == em.entities[0].getX())
+                                {
+                                    virobj.dir = em.entities[0].getStatus();
+                                }
+                            }
+                            virIndex++;
+                        }
+                        if (virIndex == virUsedNumFixed)
+                        {
+                            break;
+                        }
+                    }
+                }
             }
             if (GetAsyncKeyState('A') & 0x8000) // 检查A键是否被按下，并且地图数据中相应位置为1
             {
@@ -1343,6 +1398,29 @@ int CoreCircle(void)
                     em.entities[0].setX(-2);
                 }
                 em.entities[0].setStatus('a');
+                {
+                    int virIndex = 0;
+                    int virUsedNumFixed = vom.virUsedNum;
+#pragma omp parallel for num_threads(12)
+                    for (auto &virobj : vom.objects)
+                    {
+                        if (virobj.exist == 1)
+                        {
+                            if (virobj.attribute == 0)
+                            {
+                                if (virobj.y == em.entities[0].getY() && virobj.x == em.entities[0].getX())
+                                {
+                                    virobj.dir = em.entities[0].getStatus();
+                                }
+                            }
+                            virIndex++;
+                        }
+                        if (virIndex == virUsedNumFixed)
+                        {
+                            break;
+                        }
+                    }
+                }
             }
             if (GetAsyncKeyState('D') & 0x8000) // 检查D键是否被按下，并且地图数据中相应位置为1
             {
@@ -1353,6 +1431,29 @@ int CoreCircle(void)
                     em.entities[0].setX(-1);
                 }
                 em.entities[0].setStatus('d');
+                {
+                    int virIndex = 0;
+                    int virUsedNumFixed = vom.virUsedNum;
+#pragma omp parallel for num_threads(12)
+                    for (auto &virobj : vom.objects)
+                    {
+                        if (virobj.exist == 1)
+                        {
+                            if (virobj.attribute == 0)
+                            {
+                                if (virobj.y == em.entities[0].getY() && virobj.x == em.entities[0].getX())
+                                {
+                                    virobj.dir = em.entities[0].getStatus();
+                                }
+                            }
+                            virIndex++;
+                        }
+                        if (virIndex == virUsedNumFixed)
+                        {
+                            break;
+                        }
+                    }
+                }
             }
             if (GetAsyncKeyState('J') & 0x8000) // 检查J键是否被按下
             {
@@ -1384,12 +1485,60 @@ int CoreCircle(void)
                 {
                     em.entities[1].setY(-2);
                 }
+                em.entities[1].setStatus('w');
+                {
+                    int virIndex = 0;
+                    int virUsedNumFixed = vom.virUsedNum;
+#pragma omp parallel for num_threads(12)
+                    for (auto &virobj : vom.objects)
+                    {
+                        if (virobj.exist == 1)
+                        {
+                            if (virobj.attribute == 0)
+                            {
+                                if (virobj.y == em.entities[1].getY() && virobj.x == em.entities[1].getX())
+                                {
+                                    virobj.dir = em.entities[1].getStatus();
+                                }
+                            }
+                            virIndex++;
+                        }
+                        if (virIndex == virUsedNumFixed)
+                        {
+                            break;
+                        }
+                    }
+                }
             }
             if (GetAsyncKeyState(VK_DOWN) & 0x8000)
             {
                 if ((map[(em.entities[1].getX())][em.entities[1].getY() + 1]) == '0')
                 {
                     em.entities[1].setY(-1);
+                }
+                em.entities[1].setStatus('s');
+                {
+                    int virIndex = 0;
+                    int virUsedNumFixed = vom.virUsedNum;
+#pragma omp parallel for num_threads(12)
+                    for (auto &virobj : vom.objects)
+                    {
+                        if (virobj.exist == 1)
+                        {
+                            if (virobj.attribute == 0)
+                            {
+                                if (virobj.y == em.entities[1].getY() && virobj.x == em.entities[1].getX())
+                                {
+                                    virobj.dir = em.entities[1].getStatus();
+                                }
+                            }
+                            virIndex++;
+                        }
+                        if (virIndex == virUsedNumFixed)
+                        {
+                            break;
+                        }
+                    }
                 }
             }
             if (GetAsyncKeyState(VK_LEFT) & 0x8000)
@@ -1398,12 +1547,60 @@ int CoreCircle(void)
                 {
                     em.entities[1].setX(-2);
                 }
+                em.entities[1].setStatus('a');
+                {
+                    int virIndex = 0;
+                    int virUsedNumFixed = vom.virUsedNum;
+#pragma omp parallel for num_threads(12)
+                    for (auto &virobj : vom.objects)
+                    {
+                        if (virobj.exist == 1)
+                        {
+                            if (virobj.attribute == 0)
+                            {
+                                if (virobj.y == em.entities[1].getY() && virobj.x == em.entities[1].getX())
+                                {
+                                    virobj.dir = em.entities[1].getStatus();
+                                }
+                            }
+                            virIndex++;
+                        }
+                        if (virIndex == virUsedNumFixed)
+                        {
+                            break;
+                        }
+                    }
+                }
             }
             if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
             {
                 if ((map[(em.entities[1].getX()) + 1][(em.entities[1].getY())]) == '0')
                 {
                     em.entities[1].setX(-1);
+                }
+                em.entities[1].setStatus('d');
+                {
+                    int virIndex = 0;
+                    int virUsedNumFixed = vom.virUsedNum;
+#pragma omp parallel for num_threads(12)
+                    for (auto &virobj : vom.objects)
+                    {
+                        if (virobj.exist == 1)
+                        {
+                            if (virobj.attribute == 0)
+                            {
+                                if (virobj.y == em.entities[1].getY() && virobj.x == em.entities[1].getX())
+                                {
+                                    virobj.dir = em.entities[1].getStatus();
+                                }
+                            }
+                            virIndex++;
+                        }
+                        if (virIndex == virUsedNumFixed)
+                        {
+                            break;
+                        }
+                    }
                 }
             }
             if (GetAsyncKeyState(VK_SPACE) & 0x8000)
@@ -1621,7 +1818,7 @@ int CoreCircle(void)
                     break;
                 }
             }
-            if (GetAsyncKeyState('Q') & 0x8000) // 检查Q键是否被按下
+            if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) // 检查Q键是否被按下
             {
                 break;
             }
@@ -1646,6 +1843,27 @@ int CoreCircle(void)
                         if (virobj.len != 0)
                         {
                             virobj.len--;
+                            switch (virobj.dir)
+                            {
+                            case 'a':
+                                if (map[virobj.x - 1][virobj.y] == '0')
+                                    virobj.x--;
+                                break;
+                            case 'd':
+                                if (map[virobj.x + 1][virobj.y] == '0')
+                                    virobj.x++;
+                                break;
+                            case 'w':
+                                if (map[virobj.x][virobj.y - 1] == '0')
+                                    virobj.y--;
+                                break;
+                            case 's':
+                                if (map[virobj.x][virobj.y + 1] == '0')
+                                    virobj.y++;
+                                break;
+                            default:
+                                break;
+                            }
                         }
                         else if (virobj.len == 0)
                         {
@@ -1721,7 +1939,7 @@ int CoreCircle(void)
                             }
                             virobj.len--;
                         }
-                        else if (virobj.len == 0)
+                        else if (virobj.len <= 0)
                         {
                             virobj.exist = 0;
                             vom.virUsedNum--;
@@ -1783,8 +2001,7 @@ int CoreCircle(void)
     // 文件存储操作
     WriteMapToFile(map, "areamap.txt");
     em.writeEntitiesToFile("entities.txt");
-    if (vom.virUsedNum != 0)
-        vom.writeVirtualObjectsToFile("virtualobjects.txt");
+    vom.writeVirtualObjectsToFile("virtualobjects.txt");
     fpsdata.close();
     loginfo.close();
     return 0;
@@ -2170,9 +2387,9 @@ printMenu_:
               << "\033[0m"
               << "\033[36m\033[1m"
               << "\e[2E\e[" << windowLeftPointX + (WIN_MENU_LONAXIS - 8) / 2 << "G"
-              << "1.测试"
+              << "T.测试"
               << "\e[2E\e[" << windowLeftPointX + (WIN_MENU_LONAXIS - 8) / 2 << "G"
-              << "2.关于"
+              << "A.关于"
               << "\e[2E\e[" << windowLeftPointX + (WIN_MENU_LONAXIS - 8) / 2 << "G"
               << "S.设置"
               << "\e[2E\e[" << windowLeftPointX + (WIN_MENU_LONAXIS - 8) / 2 << "G"
@@ -2210,12 +2427,12 @@ printMenu_:
         if (time(0) % 1 == 0)
         {
             GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-            if ((csbi.dwSize.X > WIN_MENU_LONAXIS + 1 && tempWindowLeftPointX <= WIN_MENU_LONAXIS + 1) || (csbi.dwSize.Y > WIN_MENU_HORAXIS && tempWindowLeftPointY <= WIN_MENU_HORAXIS))
+            if ((csbi.dwSize.X > WIN_MENU_LONAXIS && tempWindowLeftPointX <= WIN_MENU_LONAXIS) || (csbi.dwSize.Y > WIN_MENU_HORAXIS - 1 && tempWindowLeftPointY <= WIN_MENU_HORAXIS - 1))
             {
                 system("cls");
                 goto printMenu_;
             }
-            if (csbi.dwSize.X <= WIN_MENU_LONAXIS + 1 || csbi.dwSize.Y < WIN_MENU_HORAXIS)
+            if (csbi.dwSize.X <= WIN_MENU_LONAXIS || csbi.dwSize.Y < WIN_MENU_HORAXIS - 1)
             {
                 tempWindowLeftPointX = csbi.dwSize.X;
                 tempWindowLeftPointY = csbi.dwSize.Y;
@@ -2241,19 +2458,19 @@ printMenu_:
                 goto printMenu_;
             }
         }
-        if (GetAsyncKeyState('1') & 0x8000) // 检查1键是否被按下
+        if (GetAsyncKeyState('T') & 0x8000) // 检查1键是否被按下
         {
             CoreCircle();
             system("cls");
             cstyle.SetConTitle(TIT_MAIN);
             goto printMenu_;
         }
-        if (GetAsyncKeyState('2') & 0x8000) // 检查2键是否被按下
+        if (GetAsyncKeyState('A') & 0x8000) // 检查2键是否被按下
         {
             MessageBoxExA(GetConsoleWindow(), "Copyright 2023 Zhou Xu.All rights reserved.", (VERSION_TXT), MB_OK | MB_ICONASTERISK | MB_TOPMOST, 0);
             continue;
         }
-        if (GetAsyncKeyState('T') & 0x8000) // 检查T键是否被按下
+        if (GetAsyncKeyState('G') & 0x8000) // 检查T键是否被按下
         {
             WindowDisplay setWindow;
 

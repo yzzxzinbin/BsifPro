@@ -1,4 +1,4 @@
-#define VERSION_TXT " 6.1.1 - PRE - 010118P1 "
+#define VERSION_TXT " 6.1.1 - PRE - 010122P1 "
 #include <windows.h>
 #include <tlhelp32.h>
 #include <vector>
@@ -99,4 +99,7 @@ std::string ConvertWideCharToMultiByte(const WCHAR *wideCharString);
 // (6.1.1 - preRelease - 123102P2):修复了BFX-2023-1230A1-Y:修复了窗口最大化切换时,窗口自适应失效的问题
 // (6.1.1 - preRelease - 123118P1):为主测试函数增加了窗口自适应功能
 // (6.1.1 - preRelease - 123118P2):尝试获取程序运行环境,并与WindowsTerminal进行信息交互
-// (6.1.1 - preRelease - 010118P1):将环境判断嵌入初始化函数中,程序同时兼任终端和控制台环境
+// (6.1.1 - preRelease - 010118P1):将环境判断嵌入初始化函数中,程序同时兼容终端和控制台环境
+// (6.1.1 - preRelease - 010120P1):修复了虚拟体每次测试开始的滞留显示错误
+// (6.1.1 - preRelease - 010121P1):新增了虚拟体碰撞移动逻辑
+// (6.1.1 - preRelease - 010122P1):新增了窗口调整辅助提示
