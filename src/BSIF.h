@@ -1,4 +1,4 @@
-#define VERSION_TXT " 6.1.1 - PRE - 010122P1 "
+#define VERSION_TXT " 6.1.1 - PRE - 010220P1 "
 #include <windows.h>
 #include <tlhelp32.h>
 #include <vector>
@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <ctime>
 #include <string>
+#include <map>
 
 #define WIN_MENU_LONAXIS 64 // 横长
 #define WIN_MENU_HORAXIS 25 // 纵长
@@ -29,12 +30,17 @@ bool SETITEM_windowPreDisplay = true;
 bool SETITEM_fpsInfoFile = true;
 int SETITEM_limitedFps = 60;
 int SETITEM_TERENV = -1;
+int SETITEM_sleepTimeMs = 1000;
+bool SETITEM_mapSave = false;
 
 std::string FormatTime(time_t time);
 bool IsNumber(const std::string &str);
 void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename);
 void WriteMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename);
-void SetColor(UINT uFore, UINT uBack);
+void SetColor(int uFore, int uBack);
+void WinAPISetColor(UINT uFore, UINT uBack);
+
+void ANSISetColor(int uFore, int uBack, int model);
 COORD GetColor(void);
 void PrintMapByCol(const std::vector<std::vector<char>> *map);
 void PrintMapByRow(const std::vector<std::vector<char>> *map);
@@ -58,6 +64,43 @@ bool TerminalCheck(DWORD dwPid, HWND _hwnd);
 bool ExistProcess(LPCSTR lpName);
 std::string ConvertWideCharToMultiByte(const WCHAR *wideCharString);
 
+std::map<UINT, std::string> foregroundColorMap = {
+    {0, "\033[30m"},   // 黑色
+    {8, "\033[90m"},   // 灰色
+    {1, "\033[34m"},   // 蓝色
+    {9, "\033[94m"},   // 淡蓝色
+    {2, "\033[32m"},   // 绿色
+    {10, "\033[92m"},  // 淡绿色
+    {3, "\033[92m"},   // 浅绿色
+    {11, "\033[96m"},  // 淡浅绿色
+    {4, "\033[31m"},   // 红色
+    {12, "\033[91m"},  // 淡红色
+    {5, "\033[35m"},   // 紫色
+    {13, "\033[95m"},  // 淡紫色
+    {6, "\033[33m"},   // 黄色
+    {14, "\033[93m"},  // 淡黄色
+    {7, "\033[37m"},   // 白色
+    {15, "\033[97m"},  // 亮白色
+};
+
+std::map<UINT, std::string> backgroundColorMap = {
+    {0, "\033[40m"},   // 黑色
+    {8, "\033[100m"},  // 灰色
+    {1, "\033[44m"},   // 蓝色
+    {9, "\033[104m"},  // 淡蓝色
+    {2, "\033[42m"},   // 绿色
+    {10, "\033[102m"}, // 淡绿色
+    {3, "\033[102m"},  // 浅绿色
+    {11, "\033[106m"}, // 淡浅绿色
+    {4, "\033[41m"},   // 红色
+    {12, "\033[101m"}, // 淡红色
+    {5, "\033[45m"},   // 紫色
+    {13, "\033[105m"}, // 淡紫色
+    {6, "\033[43m"},   // 黄色
+    {14, "\033[103m"}, // 淡黄色
+    {7, "\033[47m"},   // 白色
+    {15, "\033[107m"}, // 亮白色
+};
 //------------ BSIF 6 起步版本 --------------
 // 该版本主要使用STL编写图像显示工具和工程基本数据结构类
 // (6.1.0 - preRelease - 120921P1):更新移动图形显示函数,基本不损失性能的前提下实现彩色字符输出
@@ -103,3 +146,5 @@ std::string ConvertWideCharToMultiByte(const WCHAR *wideCharString);
 // (6.1.1 - preRelease - 010120P1):修复了虚拟体每次测试开始的滞留显示错误
 // (6.1.1 - preRelease - 010121P1):新增了虚拟体碰撞移动逻辑
 // (6.1.1 - preRelease - 010122P1):新增了窗口调整辅助提示
+// (6.1.1 - preRelease - 010220P1):增加了少量注释,对部分多层嵌套代码进行了重构,增加了帧休眠设置项
+// (6.1.1 - preRelease - 010423P1):使用转义字符序列重写了颜色接口

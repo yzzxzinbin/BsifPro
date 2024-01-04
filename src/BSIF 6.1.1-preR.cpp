@@ -40,7 +40,10 @@ public:
         for (; (int)fps > SETITEM_limitedFps;)
         {
             uselesscir++;
-            sleepMicroseconds(1000);
+            if (SETITEM_sleepTimeMs != 0)
+            {
+                sleepMicroseconds(SETITEM_sleepTimeMs);
+            }
             goto z;
         }
         return fps;
@@ -166,19 +169,16 @@ public:
         SetColor(foregroundColor, backgroundColor);
         for (const std::string &line : window)
         {
-
             std::cout << "\033[" << windowY + row + 1 << ";" << windowX + 1 << "H";
-            // SetPosition(windowX, windowY + row);
             std::cout << line;
-            // std::cout.flush();
             row++;
         }
-
-        SetColor(7, 0);
+        SetColor(-1, -1);
+        std::cout.flush();
         init_Window_Str();
     }
     void cui_Basic_Fill(char ch)
-    {
+    { // 填充窗口区域为ch字符
         COORD position{};
         position.X = windowX + 1;
         position.Y = windowY + 1;
@@ -186,15 +186,15 @@ public:
         for (int h = 1; h <= windowHeight; h++)
         {
             position.Y = windowY + h - 1;
-            SetPosition(windowX, position.Y);
+            std::cout << "\033[" << position.Y + 1 << ";" << windowX + 1 << "H";
             for (int l = 0; l <= windowWidth - 1; l++)
                 std::cout << ch;
-            std::cout.flush();
         }
-        SetColor(7, 0);
+        SetColor(-1, -1);
+        std::cout.flush();
     }
     void init_New_Window(int x, int y, int lenth, int height, int foreColor, int backColor)
-    {
+    { // 初始化新窗口,打印区域边框
         windowWidth = lenth - 2;
         windowHeight = height - 2;
         windowX = x + 1;
@@ -249,8 +249,63 @@ public:
         std::cout.flush();
         init_Window_Str();
     }
+
+    void init_New_Window(int x, int y, int lenth, int height)
+    { // 初始化新窗口,打印区域边框
+        windowWidth = lenth - 2;
+        windowHeight = height - 2;
+        windowX = x + 1;
+        windowY = y + 1;
+
+        COORD position{};
+        position.X = x;
+        position.Y = y;
+
+        SetColor(foregroundColor, backgroundColor);
+        SetPosition(x + 1, y);
+        for (int i = 1; i < lenth - 1; i++)
+            std::cout << "━";
+        std::cout.flush();
+        SetPosition(x + 1, y + height - 1);
+        for (int i = 1; i < lenth - 1; i++)
+            std::cout << "━";
+        std::cout.flush();
+
+        SetPosition(x, y + 1);
+        position.Y = y + 1;
+        for (int n = 1; n <= height - 2; n++, position.Y++)
+        {
+            SetPosition(x, position.Y);
+            std::cout << "┃";
+            std::cout.flush();
+        }
+
+        SetPosition(x + lenth - 1, y + 1);
+        position.Y = y + 1;
+        for (int n = 1; n <= height - 2; n++, position.Y++)
+        {
+            SetPosition(x + lenth - 1, position.Y);
+            std::cout << "┃";
+            std::cout.flush();
+        }
+
+        SetPosition(x, y);
+        std::cout << "┏";
+        std::cout.flush();
+        SetPosition(x + lenth - 1, y);
+        std::cout << "┓";
+        std::cout.flush();
+        SetPosition(x, y + height - 1);
+        std::cout << "┗";
+        std::cout.flush();
+        SetPosition(x + lenth - 1, y + height - 1);
+        std::cout << "┛";
+        SetColor(7, 0);
+        std::cout.flush();
+        init_Window_Str();
+    }
     void init_Nobound_Window(int x, int y, int lenth, int height)
-    {
+    { // 初始化无框窗口,打印区域边界(未得到转义字符序列更新,6.1.1已弃用)
         COORD position{};
         position.X = x;
         position.Y = y;
@@ -284,7 +339,7 @@ public:
         std::cout << "\033[0m";
     }
 };
-class Entity
+class Entity // 实体数据类
 {
 private:
     int id;
@@ -373,10 +428,10 @@ public:
         status = newStatus;
     }
 };
-class EntityManager
+class EntityManager // 实体类接口
 {
 public:
-    std::vector<Entity> entities;
+    std::vector<Entity> entities; // vector存储实体数据
 
 public:
     void addEntity(const std::string &name, int id, int x, int y, int hp, int sp, char status)
@@ -407,9 +462,8 @@ public:
     }
 
 public:
-    // 从文件中读取实体数据
     bool readEntitiesFromFile(const std::string &filename)
-    {
+    { // 从文件中读取实体数据
         entities.clear();
         std::ifstream file(filename);
         if (!file.is_open())
@@ -444,9 +498,8 @@ public:
         return true;
     }
 
-    // 将实体数据写入文件
     bool writeEntitiesToFile(const std::string &filename)
-    {
+    { // 将实体数据写入文件
         std::ofstream file;
         file.open(filename, std::ios::trunc);
         if (!file.is_open())
@@ -467,7 +520,7 @@ public:
 
 private:
     std::vector<std::string> split(const std::string &str, char delimiter)
-    {
+    { // 将文本文件中读到的文本进行符号分割,以便下一步的分析
         std::vector<std::string> tokens;
         std::string token;
         std::istringstream tokenStream(str);
@@ -478,7 +531,7 @@ private:
         return tokens;
     }
 };
-struct VirtualObject
+struct VirtualObject // 虚拟体结构体
 {
     int x;
     int y;
@@ -494,7 +547,7 @@ struct VirtualObject
 class VirtualObjectManager
 {
 public:
-    static const int MAX_OBJECTS = 6000; // 最大虚拟体数量
+    static const int MAX_OBJECTS = 2000; // 最大虚拟体数量
     VirtualObject objects[MAX_OBJECTS];  // 虚拟体数组
     int virUsedNum = 0;                  // 已使用的虚拟体数量,0表示objects为空
 public:
@@ -510,9 +563,9 @@ public:
             virUsedNum = 0;       // 虚拟体数量初始化为 0
         }
     }
-    // 添加新的虚拟体
+
     void addObject(int x, int y, int lx, int ly, int dir, int att, int speed, int len, int attribute)
-    {
+    { // 添加新的虚拟体
 
         int index = findEmptyIndex(); // 查找空闲节点的索引
         if (index != -1)
@@ -531,27 +584,27 @@ public:
             virUsedNum++;     // 虚拟体数量加 1
         }
     }
-    // 销毁虚拟体
+
     void destroyObject(int index)
-    {
+    { // 销毁虚拟体
         if (index >= 0 && index < MAX_OBJECTS)
         {
             objects[index].exist = 0; // 设置 exist 为 0，表示无数据
             virUsedNum--;             // 虚拟体数量减 1
         }
     }
-    // 根据索引获取虚拟体
+
     VirtualObject *getObjectByIndex(int index)
-    {
+    { // 根据索引获取虚拟体
         if (index >= 0 && index < MAX_OBJECTS && objects[index].exist == 1)
         {
             return &objects[index];
         }
         return nullptr;
     }
-    // 更新虚拟体的字段值
+
     void updateObjectField(int index, const std::string &fieldName, int newValue)
-    {
+    { // 更新虚拟体的字段值
         if (index >= 0 && index < MAX_OBJECTS && objects[index].exist == 1)
         {
             VirtualObject &object = objects[index];
@@ -603,9 +656,8 @@ public:
     }
 
 private:
-    // 查找空闲节点的索引
     int findEmptyIndex()
-    {
+    { // 查找空闲节点的索引
         for (int i = 0; i < MAX_OBJECTS; i++)
         {
             if (objects[i].exist == 0)
@@ -613,13 +665,12 @@ private:
                 return i;
             }
         }
-        exit(0); // 没有空闲节点
+        exit(0); // 没有空闲节点,一般不会发生
     }
 
 public:
-    // 从文件中读取虚拟体数据
     bool readVirtualObjectsFromFile(const std::string &filename)
-    {
+    { // 从文件中读取虚拟体数据(该功能非必须)
         initVirtualObjectManager();
 
         std::ifstream file(filename);
@@ -663,9 +714,8 @@ public:
         return true;
     }
 
-    // 将虚拟体数据写入文件
     bool writeVirtualObjectsToFile(const std::string &filename)
-    {
+    { // 将虚拟体数据写入文件(该功能非必须)
         std::ofstream file(filename, std::ios::out | std::ios::trunc);
         if (!file.is_open())
         {
@@ -685,7 +735,6 @@ public:
                      << object.exist << "," << object.attribute << std::endl;
             }
         }
-
         file.close();
         return true;
     }
@@ -706,7 +755,7 @@ private:
 EntityManager em;
 VirtualObjectManager vom;
 std::string FormatTime(time_t time)
-{
+{ // 格式化时间函数,参数为时间戳
     // 将时间转换为结构体
     struct tm *timeinfo;
     timeinfo = localtime(&time);
@@ -725,7 +774,7 @@ std::string FormatTime(time_t time)
     return ss.str();
 }
 bool IsNumber(const std::string &str)
-{
+{ // 判断字符串是否为数字
     try
     {
         std::stoi(str); // 尝试将字符串转换为整数
@@ -737,7 +786,7 @@ bool IsNumber(const std::string &str)
     }
 }
 void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename)
-{
+{ // 从文件中读取地图
     std::ifstream file(filename);
     if (file.is_open())
     {
@@ -769,7 +818,7 @@ void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &fil
 }
 
 void WriteMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename)
-{
+{ // 将地图写入文件
     std::ofstream file(filename);
     if (file.is_open())
     {
@@ -789,11 +838,39 @@ void WriteMapToFile(const std::vector<std::vector<char>> &map, const std::string
         loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
     }
 }
-void SetColor(UINT uFore, UINT uBack)
-{
+void WinAPISetColor(UINT uFore, UINT uBack)
+{ // 设置颜色(计划使用转义字符序列替换)
     std::cout.flush();
     static HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(handle, uFore + uBack * 0x10);
+}
+void SetColor(int uFore, int uBack)
+{
+    std::cout << "\033[0m";
+    if (!(foregroundColorMap.count(uFore) && backgroundColorMap.count(uBack)))
+        return;
+    if (uFore != -1)
+        std::cout << foregroundColorMap[uFore];
+    if (uBack != -1)
+        std::cout << backgroundColorMap[uBack];
+}
+void ANSISetColor(int uFore, int uBack, int model)
+{
+    std::cout << "\033[0m";
+    if (model = 16)
+    {
+        if (uFore != -1)
+            std::cout << "\033[" << uFore << "m";
+        if (uBack != -1)
+            std::cout << "\033[" << uBack << "m";
+    }
+    else if (model = 256)
+    {
+        if (uFore != -1)
+            std::cout << "\033[38;5;" << uFore << "m";
+        if (uBack != -1)
+            std::cout << "\033[48;5;" << uBack << "m";
+    }
 }
 COORD GetColor(void)
 {
@@ -810,7 +887,7 @@ COORD GetColor(void)
     return color;
 }
 void PrintMapByCol(const std::vector<std::vector<char>> *map)
-{
+{ // 列输出地图函数(暂时用不上)
     for (const auto &row : (*map))
     {
         for (const auto &element : row)
@@ -821,7 +898,7 @@ void PrintMapByCol(const std::vector<std::vector<char>> *map)
     }
 }
 void PrintMapByRow(const std::vector<std::vector<char>> *map)
-{
+{ // 行输出地图函数(核心输出函数)
     for (int col = 0; col < map->at(0).size(); col++)
     {
         for (int row = 0; row < map->size(); row++)
@@ -831,15 +908,13 @@ void PrintMapByRow(const std::vector<std::vector<char>> *map)
                 if (entity.getName() == "player1" && entity.getY() == col && entity.getX() == row)
                 {
                     std::cout << "\033[30m\033[47m"
-                              << "☯ "
-                              << "\033[0m";
+                              << "☯ ";
                     goto nomapout;
                 }
                 else if (entity.getName() == "player2" && entity.getY() == col && entity.getX() == row)
                 {
                     std::cout << "\033[30m\033[43m"
-                              << "☯ "
-                              << "\033[0m";
+                              << "☯ ";
                     goto nomapout;
                 }
             }
@@ -882,8 +957,7 @@ void PrintMapByRow(const std::vector<std::vector<char>> *map)
             {
             case '0':
                 std::cout << "\033[37m\033[47m"
-                          << "  "
-                          << "\033[0m";
+                          << "  ";
                 break;
             case '1':
                 std::cout << "\033[35m\033[45m"
@@ -924,7 +998,7 @@ void PrintMapByRow(const std::vector<std::vector<char>> *map)
     }
 }
 void PrintMapByRange(const std::vector<std::vector<char>> &map, int rowIdx, int colIdx)
-{
+{ // 区块输出函数 (本阶段工程暂时用不上)
     int printWidth = 29;
     int printHeight = 48;
 
@@ -998,12 +1072,12 @@ void PrintMapByRange(const std::vector<std::vector<char>> &map, int rowIdx, int 
         }
         if (col < printWidth - 1)
         {
-            std::cout << std::endl;
+            std::cout << "\e[1E";
         }
     }
 }
 void AppendMapToFile(const std::string &filename)
-{
+{ // 生成地图
     std::ofstream file(filename, std::ios::app);
     if (file.is_open())
     {
@@ -1042,7 +1116,7 @@ void AppendMapToFile(const std::string &filename)
     }
 }
 bool SetPosition(int x, int y)
-{
+{ // 基于Windows API设置光标位置(已逐步弃用,使用转义字符序列代替)
     // 如果x,y为-1,则位置回退一格
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     COORD pos;
@@ -1058,7 +1132,7 @@ bool SetPosition(int x, int y)
     return SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 void SetConsoleWindowPosition(int x, int y)
-{
+{ // 基于Windows API设置窗口位置 ,参数为-1时为居中显示
     HWND hwnd = GetConsoleWindow();
     RECT r;
     GetWindowRect(hwnd, &r);
@@ -1081,8 +1155,7 @@ void SetConsoleWindowPosition(int x, int y)
     MoveWindow(hwnd, x, y, width, height, TRUE);
 }
 bool OpenANSIControlChar()
-{
-    // 开启ANSI转义序列功能
+{ // 启动控制台ANSI转义序列模块
     HANDLE hStd = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hStd == INVALID_HANDLE_VALUE)
     {
@@ -1103,7 +1176,7 @@ bool OpenANSIControlChar()
     return true;
 }
 std::vector<std::string> split(const std::string &str, char delimiter)
-{
+{ // 文本分割函数的泛型版本(后来写的)
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream tokenStream(str);
@@ -1114,7 +1187,7 @@ std::vector<std::string> split(const std::string &str, char delimiter)
     return tokens;
 }
 std::string ConvertWideCharToMultiByte(const WCHAR *wideCharString)
-{
+{ // 将宽字符转换为多字节
     int bufferSize = WideCharToMultiByte(CP_UTF8, 0, wideCharString, -1, nullptr, 0, nullptr, nullptr);
     if (bufferSize == 0)
     {
@@ -1124,8 +1197,8 @@ std::string ConvertWideCharToMultiByte(const WCHAR *wideCharString)
     WideCharToMultiByte(CP_UTF8, 0, wideCharString, -1, &charString[0], bufferSize, nullptr, nullptr);
     return charString;
 }
-bool ExistProcess(LPCSTR lpName) // 判断是否存在指定进程
-{
+bool ExistProcess(LPCSTR lpName)
+{ // 判断是否存在指定进程(本程序所要查找的是WindowsTerminal.exe)
     HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (INVALID_HANDLE_VALUE == hSnapshot)
     {
@@ -1134,8 +1207,8 @@ bool ExistProcess(LPCSTR lpName) // 判断是否存在指定进程
     PROCESSENTRY32 pe = {sizeof(pe)};
     BOOL fOk;
     for (fOk = Process32First(hSnapshot, &pe); fOk; fOk = Process32Next(hSnapshot, &pe))
-    {
-
+    { // 此处如果是GCC编译，IntelliSense报错不用管，不影响编译
+        // 如果编译报错可以使用上面的ConvertWideCharToMultiByte转换
         if (!stricmp(pe.szExeFile, lpName))
         {
             CloseHandle(hSnapshot);
@@ -1144,9 +1217,8 @@ bool ExistProcess(LPCSTR lpName) // 判断是否存在指定进程
     }
     return false;
 }
-
 bool TerminalCheck(DWORD dwPid, HWND _hwnd)
-{
+{ // 检查传入的HWND是否为本程序所使用的控制台窗口
     HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (INVALID_HANDLE_VALUE == hSnapshot)
     {
@@ -1156,6 +1228,7 @@ bool TerminalCheck(DWORD dwPid, HWND _hwnd)
     BOOL fOk;
     for (fOk = Process32First(hSnapshot, &pe); fOk; fOk = Process32Next(hSnapshot, &pe))
     {
+        // 此处报错处理方式同上
         if (!stricmp(pe.szExeFile, "WindowsTerminal.exe") && pe.th32ProcessID == dwPid)
         {
             CloseHandle(hSnapshot);
@@ -1172,9 +1245,11 @@ bool TerminalCheck(DWORD dwPid, HWND _hwnd)
     return false;
 }
 BOOL CALLBACK EnumWindowsProc(HWND _hwnd, LPARAM lParam)
-{
+{ // 回调函数，用于检查遍历到的窗口句柄是否为本程序所使用的控制台窗口
     DWORD pid;
     GetWindowThreadProcessId(_hwnd, &pid);
+    // 此处判断为真则为 WindowsTerminal终端环境
+    // 此处判断为假则为 控制台应用程序主机
     if (TerminalCheck(pid, _hwnd))
     {
         // printf("Terminal Found! pid=%ld hwnd=%p\n", pid, _hwnd);
@@ -1186,8 +1261,8 @@ BOOL CALLBACK EnumWindowsProc(HWND _hwnd, LPARAM lParam)
     return TRUE;
 }
 int DetectMap(const std::vector<std::vector<char>> &map, int x, int y, char status, char symbol)
-{
-
+{ // 传入地图，坐标，方向，目标符号,对目标符号进行反相线性检测
+    // 返回第一个非目标符号的坐标
     while (true)
     {
         switch (status)
@@ -1221,19 +1296,21 @@ int DetectMap(const std::vector<std::vector<char>> &map, int x, int y, char stat
             }
             break;
         default:
-            exit(0);
+            exit(0); // 不存在default分支,执行到此必然代码有误,应当抛出异常
         }
     }
 }
 void InitTestEnv()
-{
+{ // 初始化测试环境
     system("cls");
+
     // 关闭IO同步
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
     std::cout.tie(nullptr);
     cstyle.SetConTitle(TIT_TEST);
 
+    // 若为控制台应用程序主机,设置控制台窗口大小
     if (SETITEM_TERENV != 1)
         system("mode con cols=126 lines=30");
 
@@ -1257,8 +1334,8 @@ int CoreCircle(void)
     // 创建地图
     std::vector<std::vector<char>> map;
     ReadMapFromFile(map, "areamap.txt");
-    // 读取虚拟体和实体数据
 
+    // 读取虚拟体和实体数据
     em.readEntitiesFromFile("entities.txt");
     vom.readVirtualObjectsFromFile("virtualobjects.txt");
     int rolindex = 1;
@@ -1267,7 +1344,7 @@ int CoreCircle(void)
 
     WindowDisplay infowindow;
 
-    infowindow.init_New_Window(96, 1, 30, 29, 0x0, 0xb);
+    infowindow.init_New_Window(96, 1, 30, 29, 0x0, 0xB);
     infowindow.cui_Basic_Fill(' ');
 
     CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -1287,7 +1364,7 @@ int CoreCircle(void)
             tempWindowX = csbi.dwSize.X;
             tempWindowY = csbi.dwSize.Y;
             SetConsoleWindowPosition(-1, -1);
-            infowindow.init_New_Window(96, 1, 30, 29, 0x0, 0xb);
+            infowindow.init_New_Window(96, 1, 30, 29);
             infowindow.cui_Basic_Fill(' ');
         }
         if (csbi.dwSize.X != TEST_LONAXIS || csbi.dwSize.Y != TEST_HORAXIS)
@@ -1304,7 +1381,6 @@ int CoreCircle(void)
             Sleep(50);
             continue;
         }
-
         if (frameCount % 10 == 0)
         {
             infowindow.put_In_Text(0, 0, "|frame:" + std::to_string(frameCount));
@@ -1321,7 +1397,7 @@ int CoreCircle(void)
         }
         infowindow.display_Window_Str();
 
-        if (frameCount % 2 == 0)
+        if (frameCount % 3 == 0)
         {
             if (GetAsyncKeyState('W') & 0x8000) // 检查W键是否被按下，并且地图数据中相应位置为1
             {
@@ -1989,8 +2065,8 @@ int CoreCircle(void)
         }
         SetPosition(0, 1);
         PrintMapByRow(&map);
-        // PrintMapByRange(map, em.entities[0].getX(), em.entities[0].getY()); // PrintMapByRow(&map, colindex);
-        FPS.getFpsLimited();
+        // PrintMapByRange(map, em.entities[0].getX(), em.entities[0].getY());(区块输出模式)
+        FPS.getFpsLimited(); // 帧率锁定
         if (SETITEM_fpsInfoFile)
             fpsdata << frameCount << "|" << FPS.getFpsValue() << "|" << FPS.uselesscir << std::endl;
     }
@@ -1999,7 +2075,8 @@ int CoreCircle(void)
     // std::cout << num << std::endl;
 
     // 文件存储操作
-    WriteMapToFile(map, "areamap.txt");
+    if (SETITEM_mapSave)
+        WriteMapToFile(map, "areamap.txt");
     em.writeEntitiesToFile("entities.txt");
     vom.writeVirtualObjectsToFile("virtualobjects.txt");
     fpsdata.close();
@@ -2007,40 +2084,39 @@ int CoreCircle(void)
     return 0;
 }
 void ReadSetInfoFromFile(void)
-{
+{ // 从文件读取设置信息
     std::ifstream file("settings.txt");
-    if (file.is_open())
+    if (!file.is_open())
+        return;
+    std::string line;
+    while (std::getline(file, line))
     {
-        std::string line;
-        while (std::getline(file, line))
+        std::vector<std::string> fields = split(line, ':');
+        if (fields.size() == 2)
         {
-            std::vector<std::string> fields = split(line, ':');
-            if (fields.size() == 2)
-            {
-                setCoreWindowItem.push_back(fields[0]);
-                setCoreWindowSelect.push_back(fields[1]);
-            }
-            else
-            {
-                // 无效的设置行
-                loginfo << FormatTime(time(nullptr)) << "Invalid settings line: " << line << std::endl;
-            }
+            setCoreWindowItem.push_back(fields[0]);
+            setCoreWindowSelect.push_back(fields[1]);
         }
-        file.close();
+        else
+        {
+            // 无效的设置行
+            loginfo << FormatTime(time(nullptr)) << "Invalid settings line: " << line << std::endl;
+        }
     }
+    file.close();
+
     EffectSetInfo();
 }
 void SaveSetInfoToFile(void)
 {
     std::ofstream file("settings.txt");
-    if (file.is_open())
+    if (!file.is_open())
+        return;
+    for (size_t i = 0; i < setCoreWindowItem.size(); i++)
     {
-        for (size_t i = 0; i < setCoreWindowItem.size(); i++)
-        {
-            file << setCoreWindowItem[i] << ":" << setCoreWindowSelect[i] << std::endl;
-        }
-        file.close();
+        file << setCoreWindowItem[i] << ":" << setCoreWindowSelect[i] << std::endl;
     }
+    file.close();
 }
 void SetModule(void)
 {
@@ -2055,7 +2131,7 @@ void SetModule(void)
     int highlightItem = 0;
     bool changeState = true;
     bool bottom_pressed_permisson = true;
-    setCoreWindow.init_New_Window((CSBI.dwSize.X - setWindowWidth) / 2, (CSBI.dwSize.Y - setWindowHeight) / 2, setWindowWidth, setWindowHeight, 0x7, 0x0);
+    setCoreWindow.init_New_Window((CSBI.dwSize.X - setWindowWidth) / 2, (CSBI.dwSize.Y - setWindowHeight) / 2, setWindowWidth, setWindowHeight, 0x7, -1);
     setCoreWindow.cui_Basic_Fill(' ');
 
     std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 2) << ";" << ((CSBI.dwSize.X - 8) / 2 + 2) << "H";
@@ -2264,6 +2340,15 @@ void EffectSetInfo()
     // {
     //     SETITEM_TERENV = 0;
     // }
+    SETITEM_sleepTimeMs = std::stoi(setCoreWindowSelect[4]);
+    if (setCoreWindowSelect[5] == "Y")
+    {
+        SETITEM_mapSave = true;
+    }
+    else if (setCoreWindowSelect[5] == "N")
+    {
+        SETITEM_mapSave = false;
+    }
 }
 void InitMainDrive(void)
 {
@@ -2458,19 +2543,19 @@ printMenu_:
                 goto printMenu_;
             }
         }
-        if (GetAsyncKeyState('T') & 0x8000) // 检查1键是否被按下
+        if (GetAsyncKeyState('T') & 0x8000) // 检查T键是否被按下
         {
             CoreCircle();
             system("cls");
             cstyle.SetConTitle(TIT_MAIN);
             goto printMenu_;
         }
-        if (GetAsyncKeyState('A') & 0x8000) // 检查2键是否被按下
+        if (GetAsyncKeyState('A') & 0x8000) // 检查A键是否被按下
         {
             MessageBoxExA(GetConsoleWindow(), "Copyright 2023 Zhou Xu.All rights reserved.", (VERSION_TXT), MB_OK | MB_ICONASTERISK | MB_TOPMOST, 0);
             continue;
         }
-        if (GetAsyncKeyState('G') & 0x8000) // 检查T键是否被按下
+        if (GetAsyncKeyState('G') & 0x8000) // 检查G键是否被按下
         {
             WindowDisplay setWindow;
 
