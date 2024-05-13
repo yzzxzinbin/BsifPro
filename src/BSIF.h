@@ -1,4 +1,4 @@
-#define VERSION_TXT " 6.1.1 - PRE - 010220P1 "
+#define VERSION_TXT " 6.1.1 - PRE - 010423P1 "
 #include <windows.h>
 #include <tlhelp32.h>
 #include <vector>
@@ -37,9 +37,8 @@ std::string FormatTime(time_t time);
 bool IsNumber(const std::string &str);
 void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &filename);
 void WriteMapToFile(const std::vector<std::vector<char>> &map, const std::string &filename);
-void SetColor(int uFore, int uBack);
+inline void SetColor(int uFore, int uBack);
 void WinAPISetColor(UINT uFore, UINT uBack);
-
 void ANSISetColor(int uFore, int uBack, int model);
 COORD GetColor(void);
 void PrintMapByCol(const std::vector<std::vector<char>> *map);
@@ -47,7 +46,7 @@ void PrintMapByRow(const std::vector<std::vector<char>> *map);
 void PrintMapByRange(const std::vector<std::vector<char>> &map, int rowIdx, int colIdx);
 void AppendMapToFile(const std::string &filename);
 bool SetPosition(int x, int y);
-void SetConsoleWindowPosition(int x, int y);
+inline void SetConsoleWindowPosition(int x, int y);
 bool OpenANSIControlChar();
 int DetectMap(const std::vector<std::vector<char>> &map, int x, int y, char status, char symbol);
 std::vector<std::string> split(const std::string &str, char delimiter);
@@ -148,3 +147,4 @@ std::map<UINT, std::string> backgroundColorMap = {
 // (6.1.1 - preRelease - 010122P1):新增了窗口调整辅助提示
 // (6.1.1 - preRelease - 010220P1):增加了少量注释,对部分多层嵌套代码进行了重构,增加了帧休眠设置项
 // (6.1.1 - preRelease - 010423P1):使用转义字符序列重写了颜色接口
+// (6.1.1 - preRelease - 051120P1):对锁帧函数进行了改进,大幅降低CPU占用,调整了键盘读取灵敏度参数

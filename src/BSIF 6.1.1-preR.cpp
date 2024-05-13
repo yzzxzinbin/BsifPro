@@ -1,6 +1,6 @@
 // BASICINTERFACE 6Gen1 - 基本接口工程第六代
 // Ver 6.1.1 - preRelease
-// 2020.08.28 - 2020.09.17 - 2021.09.27 - 2023.05.23 - 2023.12.09
+// 2020.08.15 - 2020.09.17 - 2021.09.27 - 2022.06.28 - 2023.05.23 - 2023.12.09
 
 #include "BSIF.h"
 
@@ -42,7 +42,8 @@ public:
             uselesscir++;
             if (SETITEM_sleepTimeMs != 0)
             {
-                sleepMicroseconds(SETITEM_sleepTimeMs);
+                // sleepMicroseconds(SETITEM_sleepTimeMs);
+                Sleep(SETITEM_sleepTimeMs);
             }
             goto z;
         }
@@ -55,7 +56,7 @@ public:
     }
     void sleepMicroseconds(DWORD microseconds)
     {
-        Sleep(microseconds / 1000);
+        Sleep(microseconds);
     }
 
 private:
@@ -468,7 +469,9 @@ public:
         std::ifstream file(filename);
         if (!file.is_open())
         {
-            loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            loginfo << FormatTime(time(nullptr))
+                    << "Failed to open file: "
+                    << filename << std::endl;
             return false;
         }
 
@@ -490,7 +493,8 @@ public:
             }
             else
             {
-                std::cout << "Invalid line: " << line << std::endl;
+                loginfo << "Invalid Entities info line: " << line
+                        << std::endl;
             }
         }
 
@@ -504,14 +508,18 @@ public:
         file.open(filename, std::ios::trunc);
         if (!file.is_open())
         {
-            loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            loginfo << FormatTime(time(nullptr))
+                    << "Failed to open file: "
+                    << filename << std::endl;
             return false;
         }
 
         for (const Entity &entity : entities)
         {
             file << entity.getName() << "," << entity.getId() << ","
-                 << entity.getHp() << "," << entity.getSp() << "," << entity.getX() << "," << entity.getY() << "," << entity.getStatus() << std::endl;
+                 << entity.getHp() << "," << entity.getSp() << ","
+                 << entity.getX() << "," << entity.getY() << ","
+                 << entity.getStatus() << std::endl;
         }
 
         file.close();
@@ -650,7 +658,7 @@ public:
             }
             else
             {
-                std::cout << "Invalid field name." << std::endl;
+                loginfo << "Invalid Object field name." << std::endl;
             }
         }
     }
@@ -677,7 +685,8 @@ public:
 
         if (!file.is_open())
         {
-            loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            loginfo << FormatTime(time(nullptr))
+                    << "Failed to open file: " << filename << std::endl;
             return false;
         }
 
@@ -687,7 +696,8 @@ public:
             std::vector<std::string> fields = split(line, ',');
             if (fields.size() != 10)
             {
-                loginfo << FormatTime(time(nullptr)) << "Invalid data format in file: " << filename << std::endl;
+                loginfo << FormatTime(time(nullptr))
+                        << "Invalid data format in file: " << filename << std::endl;
                 return false;
             }
 
@@ -719,7 +729,9 @@ public:
         std::ofstream file(filename, std::ios::out | std::ios::trunc);
         if (!file.is_open())
         {
-            loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+            loginfo << FormatTime(time(nullptr))
+                    << "Failed to open file: " << filename
+                    << std::endl;
             return false;
         }
 
@@ -809,11 +821,13 @@ void ReadMapFromFile(std::vector<std::vector<char>> &map, const std::string &fil
             map.push_back(row);
         }
         file.close();
-        loginfo << FormatTime(time(nullptr)) << "Map read from file successfully." << std::endl;
+        loginfo << FormatTime(time(nullptr))
+                << "Map read from file successfully." << std::endl;
     }
     else
     {
-        loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename;
+        loginfo << FormatTime(time(nullptr))
+                << "Failed to open file: " << filename;
     }
 }
 
@@ -831,11 +845,13 @@ void WriteMapToFile(const std::vector<std::vector<char>> &map, const std::string
             file << std::endl;
         }
         file.close();
-        loginfo << FormatTime(time(nullptr)) << "Map written to file successfully." << std::endl;
+        loginfo << FormatTime(time(nullptr))
+                << "Map written to file successfully." << std::endl;
     }
     else
     {
-        loginfo << FormatTime(time(nullptr)) << "Failed to open file: " << filename << std::endl;
+        loginfo << FormatTime(time(nullptr))
+                << "Failed to open file: " << filename << std::endl;
     }
 }
 void WinAPISetColor(UINT uFore, UINT uBack)
@@ -844,10 +860,11 @@ void WinAPISetColor(UINT uFore, UINT uBack)
     static HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(handle, uFore + uBack * 0x10);
 }
-void SetColor(int uFore, int uBack)
+inline void SetColor(int uFore, int uBack)
 {
     std::cout << "\033[0m";
-    if (!(foregroundColorMap.count(uFore) && backgroundColorMap.count(uBack)))
+    if (!(foregroundColorMap.count(uFore) &&
+          backgroundColorMap.count(uBack)))
         return;
     if (uFore != -1)
         std::cout << foregroundColorMap[uFore];
@@ -905,13 +922,15 @@ void PrintMapByRow(const std::vector<std::vector<char>> *map)
         {
             for (const Entity &entity : em.entities)
             {
-                if (entity.getName() == "player1" && entity.getY() == col && entity.getX() == row)
+                if (entity.getName() == "player1" &&
+                    entity.getY() == col && entity.getX() == row)
                 {
                     std::cout << "\033[30m\033[47m"
                               << "☯ ";
                     goto nomapout;
                 }
-                else if (entity.getName() == "player2" && entity.getY() == col && entity.getX() == row)
+                else if (entity.getName() == "player2" &&
+                         entity.getY() == col && entity.getX() == row)
                 {
                     std::cout << "\033[30m\033[43m"
                               << "☯ ";
@@ -1131,7 +1150,7 @@ bool SetPosition(int x, int y)
 
     return SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
-void SetConsoleWindowPosition(int x, int y)
+inline void SetConsoleWindowPosition(int x, int y)
 { // 基于Windows API设置窗口位置 ,参数为-1时为居中显示
     HWND hwnd = GetConsoleWindow();
     RECT r;
@@ -1144,13 +1163,9 @@ void SetConsoleWindowPosition(int x, int y)
     int screen_height = GetSystemMetrics(SM_CYSCREEN);
 
     if (x == -1)
-    {
         x = (screen_width - width) / 2;
-    }
     if (y == -1)
-    {
         y = (screen_height - height) / 2;
-    }
 
     MoveWindow(hwnd, x, y, width, height, TRUE);
 }
@@ -1188,25 +1203,42 @@ std::vector<std::string> split(const std::string &str, char delimiter)
 }
 std::string ConvertWideCharToMultiByte(const WCHAR *wideCharString)
 { // 将宽字符转换为多字节
-    int bufferSize = WideCharToMultiByte(CP_UTF8, 0, wideCharString, -1, nullptr, 0, nullptr, nullptr);
+    int bufferSize = WideCharToMultiByte(CP_UTF8,
+                                         0,
+                                         wideCharString,
+                                         -1,
+                                         nullptr,
+                                         0,
+                                         nullptr,
+                                         nullptr);
     if (bufferSize == 0)
     {
         return ""; // 转换失败
     }
     static std::string charString(bufferSize, '\0');
-    WideCharToMultiByte(CP_UTF8, 0, wideCharString, -1, &charString[0], bufferSize, nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8,
+                        0,
+                        wideCharString,
+                        -1,
+                        &charString[0],
+                        bufferSize,
+                        nullptr,
+                        nullptr);
     return charString;
 }
 bool ExistProcess(LPCSTR lpName)
 { // 判断是否存在指定进程(本程序所要查找的是WindowsTerminal.exe)
-    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,
+                                                0);
     if (INVALID_HANDLE_VALUE == hSnapshot)
     {
         return false;
     }
     PROCESSENTRY32 pe = {sizeof(pe)};
     BOOL fOk;
-    for (fOk = Process32First(hSnapshot, &pe); fOk; fOk = Process32Next(hSnapshot, &pe))
+    for (fOk = Process32First(hSnapshot, &pe);
+         fOk;
+         fOk = Process32Next(hSnapshot, &pe))
     { // 此处如果是GCC编译，IntelliSense报错不用管，不影响编译
         // 如果编译报错可以使用上面的ConvertWideCharToMultiByte转换
         if (!stricmp(pe.szExeFile, lpName))
@@ -1226,7 +1258,9 @@ bool TerminalCheck(DWORD dwPid, HWND _hwnd)
     }
     PROCESSENTRY32 pe = {sizeof(pe)};
     BOOL fOk;
-    for (fOk = Process32First(hSnapshot, &pe); fOk; fOk = Process32Next(hSnapshot, &pe))
+    for (fOk = Process32First(hSnapshot, &pe);
+         fOk;
+         fOk = Process32Next(hSnapshot, &pe))
     {
         // 此处报错处理方式同上
         if (!stricmp(pe.szExeFile, "WindowsTerminal.exe") && pe.th32ProcessID == dwPid)
@@ -1235,7 +1269,8 @@ bool TerminalCheck(DWORD dwPid, HWND _hwnd)
             WCHAR title[MAX_PATH];
             GetWindowTextW(_hwnd, title, MAX_PATH);
             std::string convertedTitle = ConvertWideCharToMultiByte(title);
-            if (strcmp(convertedTitle.c_str(), _pgmptr) && strcmp(convertedTitle.c_str(), TIT_MAIN))
+            if (strcmp(convertedTitle.c_str(), _pgmptr) &&
+                strcmp(convertedTitle.c_str(), TIT_MAIN))
             {
                 return false;
             }
@@ -1315,7 +1350,13 @@ void InitTestEnv()
         system("mode con cols=126 lines=30");
 
     // 禁用窗口最大化和最小化和动态调整窗口大小
-    SetWindowLongPtrA(GetConsoleWindow(), GWL_STYLE, GetWindowLongPtrA(GetConsoleWindow(), GWL_STYLE) & ~WS_SIZEBOX & ~WS_MAXIMIZEBOX & ~WS_MINIMIZEBOX);
+    SetWindowLongPtrA(GetConsoleWindow(),
+                      GWL_STYLE,
+                      GetWindowLongPtrA(GetConsoleWindow(),
+                                        GWL_STYLE) &
+                          ~WS_SIZEBOX &
+                          ~WS_MAXIMIZEBOX &
+                          ~WS_MINIMIZEBOX);
     SetConsoleWindowPosition(-1, -1);
 
     cstyle.SetFont(L"Consolas", 18);
@@ -1348,7 +1389,7 @@ int CoreCircle(void)
     infowindow.cui_Basic_Fill(' ');
 
     CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    GetConsoleScreenBufferInfo(hOutStd, &csbi);
     WindowDisplay warningWindow;
     int tempWindowX = csbi.dwSize.X;
     int tempWindowY = csbi.dwSize.Y;
@@ -1356,11 +1397,12 @@ int CoreCircle(void)
     // 核心循环,循环中非阻塞读取键盘输入,然后使用switch对awsd四个按键进行响应,即改变相应的地图索引值
     for (frameCount = 0; true; frameCount++)
     {
-        FPS.resetStartTime();
-        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+        FPS.resetStartTime();     // 重置帧时间计算起点
+        if (frameCount % 10 == 0) // 刷新窗口数据(csbi)
+            GetConsoleScreenBufferInfo(hOutStd, &csbi);
         if ((tempWindowX != TEST_LONAXIS && csbi.dwSize.X == TEST_LONAXIS) ||
             (tempWindowY != TEST_HORAXIS && csbi.dwSize.Y == TEST_HORAXIS))
-        {
+        { // 窗口由错误窗口(tempwindow)变为正常窗口(csbi)
             tempWindowX = csbi.dwSize.X;
             tempWindowY = csbi.dwSize.Y;
             SetConsoleWindowPosition(-1, -1);
@@ -1368,15 +1410,23 @@ int CoreCircle(void)
             infowindow.cui_Basic_Fill(' ');
         }
         if (csbi.dwSize.X != TEST_LONAXIS || csbi.dwSize.Y != TEST_HORAXIS)
-        {
+        { // 窗口尺寸不符
             system("cls");
             tempWindowX = csbi.dwSize.X;
             tempWindowY = csbi.dwSize.Y;
-            warningWindow.init_New_Window((csbi.dwSize.X - 30) / 2, (csbi.dwSize.Y - 5) / 2, 30, 5, 0x0, 0xc);
+            warningWindow.init_New_Window((csbi.dwSize.X - 30) / 2,
+                                          (csbi.dwSize.Y - 5) / 2,
+                                          30, 5, 0x0, 0xc);
             warningWindow.cui_Basic_Fill(' ');
-            warningWindow.put_In_Text(0, 0, "    Window Size Must Be");
-            warningWindow.put_In_Text(0, 1, "        (126 x 30)");
-            warningWindow.put_In_Text(0, 2, "     Now Is :" + std::to_string(csbi.dwSize.X) + " x " + std::to_string(csbi.dwSize.Y) + " ");
+            warningWindow.put_In_Text(0,
+                                      0,
+                                      "    Window Size Must Be");
+            warningWindow.put_In_Text(0,
+                                      1,
+                                      "        (126 x 30)");
+            warningWindow.put_In_Text(0,
+                                      2,
+                                      "     Now Is :" + std::to_string(csbi.dwSize.X) + " x " + std::to_string(csbi.dwSize.Y) + " ");
             warningWindow.display_Window_Str();
             Sleep(50);
             continue;
@@ -1394,10 +1444,10 @@ int CoreCircle(void)
             infowindow.put_In_Text(0, 8, "|en1y:" + std::to_string(em.entities[0].getY()));
             infowindow.put_In_Text(0, 9, "|virUsedNum:" + std::to_string(vom.virUsedNum));
             infowindow.put_In_Text(0, 10, "|en1hp:" + std::to_string(em.entities[0].getHp()));
+            infowindow.display_Window_Str();
         }
-        infowindow.display_Window_Str();
 
-        if (frameCount % 3 == 0)
+        if (frameCount % 1 == 0)
         {
             if (GetAsyncKeyState('W') & 0x8000) // 检查W键是否被按下，并且地图数据中相应位置为1
             {
@@ -1418,7 +1468,8 @@ int CoreCircle(void)
                         {
                             if (virobj.attribute == 0)
                             {
-                                if (virobj.y == em.entities[0].getY() && virobj.x == em.entities[0].getX())
+                                if (virobj.y == em.entities[0].getY() &&
+                                    virobj.x == em.entities[0].getX())
                                 {
                                     virobj.dir = em.entities[0].getStatus();
                                 }
@@ -1451,7 +1502,8 @@ int CoreCircle(void)
                         {
                             if (virobj.attribute == 0)
                             {
-                                if (virobj.y == em.entities[0].getY() && virobj.x == em.entities[0].getX())
+                                if (virobj.y == em.entities[0].getY() &&
+                                    virobj.x == em.entities[0].getX())
                                 {
                                     virobj.dir = em.entities[0].getStatus();
                                 }
@@ -1484,7 +1536,8 @@ int CoreCircle(void)
                         {
                             if (virobj.attribute == 0)
                             {
-                                if (virobj.y == em.entities[0].getY() && virobj.x == em.entities[0].getX())
+                                if (virobj.y == em.entities[0].getY() &
+                                    virobj.x == em.entities[0].getX())
                                 {
                                     virobj.dir = em.entities[0].getStatus();
                                 }
@@ -1517,7 +1570,8 @@ int CoreCircle(void)
                         {
                             if (virobj.attribute == 0)
                             {
-                                if (virobj.y == em.entities[0].getY() && virobj.x == em.entities[0].getX())
+                                if (virobj.y == em.entities[0].getY() &&
+                                    virobj.x == em.entities[0].getX())
                                 {
                                     virobj.dir = em.entities[0].getStatus();
                                 }
@@ -1572,7 +1626,8 @@ int CoreCircle(void)
                         {
                             if (virobj.attribute == 0)
                             {
-                                if (virobj.y == em.entities[1].getY() && virobj.x == em.entities[1].getX())
+                                if (virobj.y == em.entities[1].getY() &&
+                                    virobj.x == em.entities[1].getX())
                                 {
                                     virobj.dir = em.entities[1].getStatus();
                                 }
@@ -1603,7 +1658,8 @@ int CoreCircle(void)
                         {
                             if (virobj.attribute == 0)
                             {
-                                if (virobj.y == em.entities[1].getY() && virobj.x == em.entities[1].getX())
+                                if (virobj.y == em.entities[1].getY() &&
+                                    virobj.x == em.entities[1].getX())
                                 {
                                     virobj.dir = em.entities[1].getStatus();
                                 }
@@ -1634,7 +1690,8 @@ int CoreCircle(void)
                         {
                             if (virobj.attribute == 0)
                             {
-                                if (virobj.y == em.entities[1].getY() && virobj.x == em.entities[1].getX())
+                                if (virobj.y == em.entities[1].getY() &&
+                                    virobj.x == em.entities[1].getX())
                                 {
                                     virobj.dir = em.entities[1].getStatus();
                                 }
@@ -1665,7 +1722,8 @@ int CoreCircle(void)
                         {
                             if (virobj.attribute == 0)
                             {
-                                if (virobj.y == em.entities[1].getY() && virobj.x == em.entities[1].getX())
+                                if (virobj.y == em.entities[1].getY() &&
+                                    virobj.x == em.entities[1].getX())
                                 {
                                     virobj.dir = em.entities[1].getStatus();
                                 }
@@ -1688,7 +1746,9 @@ int CoreCircle(void)
                         int virUsedNumFixed = vom.virUsedNum;
                         for (auto &virobj : vom.objects)
                         {
-                            if (virobj.exist == 1 && virobj.x == em.entities[0].getX() && virobj.y == em.entities[0].getY())
+                            if (virobj.exist == 1 &&
+                                virobj.x == em.entities[0].getX() &&
+                                virobj.y == em.entities[0].getY())
                             {
                                 goto stopbomb;
                             }
@@ -1699,7 +1759,9 @@ int CoreCircle(void)
                             virIndex++;
                         }
                     }
-                    vom.addObject(em.entities[0].getX(), em.entities[0].getY(), 0, 0, 0, 100, 0, 100, 0);
+                    vom.addObject(em.entities[0].getX(),
+                                  em.entities[0].getY(),
+                                  0, 0, 0, 100, 0, 100, 0);
                 }
             }
             if (GetAsyncKeyState(VK_RSHIFT) & 0x8000)
@@ -1711,7 +1773,8 @@ int CoreCircle(void)
                         int virUsedNumFixed = vom.virUsedNum;
                         for (auto &virobj : vom.objects)
                         {
-                            if (virobj.exist == 1 && virobj.x == em.entities[1].getX() && virobj.y == em.entities[1].getY())
+                            if (virobj.exist == 1 && virobj.x == em.entities[1].getX() &&
+                                virobj.y == em.entities[1].getY())
                             {
                                 goto stopbomb;
                             }
@@ -1722,7 +1785,9 @@ int CoreCircle(void)
                             virIndex++;
                         }
                     }
-                    vom.addObject(em.entities[1].getX(), em.entities[1].getY(), 0, 0, 0, 100, 0, 100, 0);
+                    vom.addObject(em.entities[1].getX(),
+                                  em.entities[1].getY(),
+                                  0, 0, 0, 100, 0, 100, 0);
                 }
             }
         stopbomb:
@@ -1756,19 +1821,35 @@ int CoreCircle(void)
                 switch (em.entities[0].getStatus())
                 {
                 case 'a':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'a',
+                                              '0')) != -1)
                         map[tempdata + 1][em.entities[0].getY()] = '1';
                     break;
                 case 'd':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'd',
+                                              '0')) != -1)
                         map[tempdata - 1][em.entities[0].getY()] = '1';
                     break;
                 case 'w':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'w',
+                                              '0')) != -1)
                         map[em.entities[0].getX()][tempdata + 1] = '1';
                     break;
                 case 's':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              's',
+                                              '0')) != -1)
                         map[em.entities[0].getX()][tempdata - 1] = '1';
                     break;
                 default:
@@ -1801,19 +1882,35 @@ int CoreCircle(void)
                 switch (em.entities[0].getStatus())
                 {
                 case 'a':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'a',
+                                              '0')) != -1)
                         map[tempdata + 1][em.entities[0].getY()] = '2';
                     break;
                 case 'd':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'd',
+                                              '0')) != -1)
                         map[tempdata - 1][em.entities[0].getY()] = '2';
                     break;
                 case 'w':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'w',
+                                              '0')) != -1)
                         map[em.entities[0].getX()][tempdata + 1] = '2';
                     break;
                 case 's':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              's',
+                                              '0')) != -1)
                         map[em.entities[0].getX()][tempdata - 1] = '2';
                     break;
                 default:
@@ -1850,19 +1947,35 @@ int CoreCircle(void)
                 switch (em.entities[0].getStatus())
                 {
                 case 'a':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'a',
+                                              '0')) != -1)
                         map[tempdata + 1][em.entities[0].getY()] = '3';
                     break;
                 case 'd':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'd',
+                                              '0')) != -1)
                         map[tempdata - 1][em.entities[0].getY()] = '3';
                     break;
                 case 'w':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'w',
+                                              '0')) != -1)
                         map[em.entities[0].getX()][tempdata + 1] = '3';
                     break;
                 case 's':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              's',
+                                              '0')) != -1)
                         map[em.entities[0].getX()][tempdata - 1] = '3';
                     break;
                 default:
@@ -1875,19 +1988,35 @@ int CoreCircle(void)
                 switch (em.entities[0].getStatus())
                 {
                 case 'a':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'a', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'a',
+                                              '0')) != -1)
                         em.entities[0].setX(tempdata + 1);
                     break;
                 case 'd':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'd', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'd',
+                                              '0')) != -1)
                         em.entities[0].setX(tempdata - 1);
                     break;
                 case 'w':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 'w', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              'w',
+                                              '0')) != -1)
                         em.entities[0].setY(tempdata + 1);
                     break;
                 case 's':
-                    if ((tempdata = DetectMap(map, em.entities[0].getX(), em.entities[0].getY(), 's', '0')) != -1)
+                    if ((tempdata = DetectMap(map,
+                                              em.entities[0].getX(),
+                                              em.entities[0].getY(),
+                                              's',
+                                              '0')) != -1)
                         em.entities[0].setY(tempdata - 1);
                     break;
                 default:
@@ -2004,7 +2133,8 @@ int CoreCircle(void)
                         {
                             for (int index = 0; index < em.entities.size(); index++)
                             {
-                                if (em.entities[index].getX() == virobj.x && em.entities[index].getY() == virobj.y)
+                                if (em.entities[index].getX() == virobj.x &&
+                                    em.entities[index].getY() == virobj.y)
                                 {
                                     em.entities[index].setHp(em.entities[index].getHp() - virobj.att);
                                     if (em.entities[index].getHp() <= 0)
@@ -2039,7 +2169,8 @@ int CoreCircle(void)
                 CONSOLE_SCREEN_BUFFER_INFO CSBI;
                 GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &CSBI);
                 WindowDisplay resultwindow;
-                resultwindow.init_New_Window((CSBI.dwSize.X - 40) / 2, (CSBI.dwSize.Y - 5) / 2, 40, 5, 0x00, 0xc);
+                resultwindow.init_New_Window((CSBI.dwSize.X - 40) / 2,
+                                             (CSBI.dwSize.Y - 5) / 2, 40, 5, 0x00, 0xc);
                 resultwindow.cui_Basic_Fill(' ');
                 resultwindow.put_In_Text(0, 1, "           Player 1 Win!");
                 resultwindow.display_Window_Str();
@@ -2053,7 +2184,8 @@ int CoreCircle(void)
                 CONSOLE_SCREEN_BUFFER_INFO CSBI;
                 GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &CSBI);
                 WindowDisplay resultwindow;
-                resultwindow.init_New_Window((CSBI.dwSize.X - 40) / 2, (CSBI.dwSize.Y - 5) / 2, 40, 5, 0x00, 0xc);
+                resultwindow.init_New_Window((CSBI.dwSize.X - 40) / 2,
+                                             (CSBI.dwSize.Y - 5) / 2, 40, 5, 0x00, 0xc);
                 resultwindow.cui_Basic_Fill(' ');
                 resultwindow.put_In_Text(0, 1, "           Player 0 Win!");
                 resultwindow.display_Window_Str();
@@ -2063,12 +2195,17 @@ int CoreCircle(void)
                 break;
             }
         }
+
         SetPosition(0, 1);
         PrintMapByRow(&map);
-        // PrintMapByRange(map, em.entities[0].getX(), em.entities[0].getY());(区块输出模式)
+        std::cout.flush();
+        // PrintMapByRange(map, em.entities[0].getX(), em.entities[0].getY());//(区块输出模式)
         FPS.getFpsLimited(); // 帧率锁定
+
         if (SETITEM_fpsInfoFile)
-            fpsdata << frameCount << "|" << FPS.getFpsValue() << "|" << FPS.uselesscir << std::endl;
+            fpsdata << frameCount << "|"
+                    << FPS.getFpsValue() << "|"
+                    << FPS.uselesscir << std::endl;
     }
 
     // int num = map.size();
@@ -2100,7 +2237,8 @@ void ReadSetInfoFromFile(void)
         else
         {
             // 无效的设置行
-            loginfo << FormatTime(time(nullptr)) << "Invalid settings line: " << line << std::endl;
+            loginfo << FormatTime(time(nullptr))
+                    << "Invalid settings line: " << line << std::endl;
         }
     }
     file.close();
@@ -2131,12 +2269,18 @@ void SetModule(void)
     int highlightItem = 0;
     bool changeState = true;
     bool bottom_pressed_permisson = true;
-    setCoreWindow.init_New_Window((CSBI.dwSize.X - setWindowWidth) / 2, (CSBI.dwSize.Y - setWindowHeight) / 2, setWindowWidth, setWindowHeight, 0x7, -1);
+    setCoreWindow.init_New_Window((CSBI.dwSize.X - setWindowWidth) / 2,
+                                  (CSBI.dwSize.Y - setWindowHeight) / 2,
+                                  setWindowWidth, setWindowHeight, 0x7, -1);
     setCoreWindow.cui_Basic_Fill(' ');
 
-    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 2) << ";" << ((CSBI.dwSize.X - 8) / 2 + 2) << "H";
+    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 2)
+              << ";"
+              << ((CSBI.dwSize.X - 8) / 2 + 2) << "H";
     std::cout << "设置页";
-    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 3) << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 1) << "H";
+    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 3)
+              << ";"
+              << ((CSBI.dwSize.X - setWindowWidth) / 2 + 1) << "H";
     std::cout << "┣";
     for (int index = 0; index < setWindowWidth - 2; index++)
     {
@@ -2154,8 +2298,10 @@ void SetModule(void)
             {
                 if (index == highlightItem)
                 {
-                    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
-                              << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2) << "H";
+                    std::cout << "\e["
+                              << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
+                              << ";"
+                              << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2) << "H";
                     for (int indexx = 0; indexx < setWindowWidth - 2; indexx++)
                     {
                         std::cout << "\e[46m"
@@ -2188,14 +2334,20 @@ void SetModule(void)
 
                 if (index == highlightItem)
                 {
-                    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
-                              << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2 + setWindowWidth - 8) << "H";
+                    std::cout << "\e["
+                              << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
+                              << ";"
+                              << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2 + setWindowWidth - 8)
+                              << "H";
                     std::cout << "\e[30m\e[46m" << setCoreWindowSelect[index] << "\e[0m";
                 }
                 else
                 {
-                    std::cout << "\e[" << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
-                              << ";" << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2 + setWindowWidth - 8) << "H";
+                    std::cout << "\e["
+                              << ((CSBI.dwSize.Y - setWindowHeight) / 2 + 4 + index)
+                              << ";"
+                              << ((CSBI.dwSize.X - setWindowWidth) / 2 + 2 + setWindowWidth - 8)
+                              << "H";
                     std::cout << "\e[37m" << setCoreWindowSelect[index] << "\e[0m";
                 }
                 std::cout.flush();
@@ -2235,7 +2387,9 @@ void SetModule(void)
                 setCoreWindowSelect[highlightItem] = "Y";
             }
         }
-        if ((GetAsyncKeyState(VK_LEFT) & 0x8000) && bottom_pressed_permisson && (GetAsyncKeyState(VK_SHIFT) & 0x8000))
+        if ((GetAsyncKeyState(VK_LEFT) & 0x8000) &&
+            bottom_pressed_permisson &&
+            (GetAsyncKeyState(VK_SHIFT) & 0x8000))
         {
             bottom_pressed_permisson = false;
             changeState = true;
@@ -2250,7 +2404,8 @@ void SetModule(void)
                 setCoreWindowSelect[highlightItem] = std::to_string(temp);
             }
         }
-        else if ((GetAsyncKeyState(VK_LEFT) & 0x8000) && bottom_pressed_permisson)
+        else if ((GetAsyncKeyState(VK_LEFT) & 0x8000) &&
+                 bottom_pressed_permisson)
         {
             bottom_pressed_permisson = false;
             changeState = true;
@@ -2265,7 +2420,9 @@ void SetModule(void)
                 setCoreWindowSelect[highlightItem] = std::to_string(temp);
             }
         }
-        if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && bottom_pressed_permisson && (GetAsyncKeyState(VK_SHIFT) & 0x8000))
+        if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) &&
+            bottom_pressed_permisson &&
+            (GetAsyncKeyState(VK_SHIFT) & 0x8000))
         {
             bottom_pressed_permisson = false;
             changeState = true;
@@ -2280,7 +2437,8 @@ void SetModule(void)
                 setCoreWindowSelect[highlightItem] = std::to_string(temp);
             }
         }
-        else if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) && bottom_pressed_permisson)
+        else if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) &&
+                 bottom_pressed_permisson)
         {
             bottom_pressed_permisson = false;
             changeState = true;
@@ -2333,13 +2491,16 @@ void EffectSetInfo()
         SETITEM_fpsInfoFile = false;
     }
     SETITEM_limitedFps = std::stoi(setCoreWindowSelect[2]);
-    // if(setCoreWindowSelect[3] == "Y")
-    // {
-    //     SETITEM_TERENV = 1;
-    // }else if(setCoreWindowSelect[3] == "N")
-    // {
-    //     SETITEM_TERENV = 0;
-    // }
+    if (setCoreWindowSelect[3] == "Y")
+    {
+        SETITEM_TERENV = 1;
+    }
+    else if (setCoreWindowSelect[3] == "N")
+    {
+        SETITEM_TERENV = 0;
+    }else if(setCoreWindowSelect[3] == "UNDEF"){
+        SETITEM_TERENV = -1;
+    }
     SETITEM_sleepTimeMs = std::stoi(setCoreWindowSelect[4]);
     if (setCoreWindowSelect[5] == "Y")
     {
@@ -2354,6 +2515,7 @@ void InitMainDrive(void)
 {
     cstyle.SetFont(L"新宋体", 18);
     cstyle.SetConTitle(TIT_MAIN);
+    hwnd = GetConsoleWindow();
     // 定义窗口句柄变量,包括窗口句柄,标准输出句柄等
     if (ExistProcess("WindowsTerminal.exe"))
     {
@@ -2369,7 +2531,7 @@ void InitMainDrive(void)
     {
         hwnd = GetForegroundWindow();
         SETITEM_TERENV = -1;
-        setCoreWindowSelect[3] = "UNDEFINE";
+        setCoreWindowSelect[3] = "UNDEF";
     }
     hOutStd = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -2389,9 +2551,11 @@ void InitMainDrive(void)
 
     if (SETITEM_TERENV == 0)
     {
+        using std::to_string;
         int cols = TEST_LONAXIS;  // 指定列数
         int lines = TEST_HORAXIS; // 指定行数
-        std::string command = "mode con cols=" + std::to_string(cols) + " lines=" + std::to_string(lines);
+        std::string command;
+        command = "mode con cols=" + to_string(cols) + " lines=" + to_string(lines);
         system(command.c_str());
     }
 
@@ -2424,7 +2588,8 @@ printMenu_:
     loginfo << "windowLeftPointX: " << windowLeftPointX << std::endl;
     for (int index = 1; index < 13; index++)
     {
-        std::cout << "\033[" << windowLeftPointY + index << ";" << windowLeftPointX + 1 << "H";
+        std::cout << "\033[" << windowLeftPointY + index << ";" << windowLeftPointX + 1
+                  << "H";
         for (int indexx = 1; indexx < WIN_MENU_LONAXIS; indexx++)
         {
             std::cout << "\e[106m"
@@ -2435,7 +2600,8 @@ printMenu_:
     }
     for (int index = 14; index < WIN_MENU_HORAXIS - 1; index++)
     {
-        std::cout << "\033[" << windowLeftPointY + index << ";" << windowLeftPointX + 1 << "H";
+        std::cout << "\033[" << windowLeftPointY + index << ";" << windowLeftPointX + 1
+                  << "H";
         for (int indexx = 1; indexx < WIN_MENU_LONAXIS; indexx++)
         {
             std::cout << " ";
@@ -2444,7 +2610,8 @@ printMenu_:
     }
     std::cout << "\033[0m";
 
-    std::cout << "\033[" << windowLeftPointY + 1 << ";" << windowLeftPointX << "H";
+    std::cout << "\033[" << windowLeftPointY + 1 << ";" << windowLeftPointX
+              << "H";
     std::string logoStyle[12] = {
 
         "           ___           ___                       ___     ",
@@ -2487,20 +2654,26 @@ printMenu_:
         std::cout << "\033[32m" << '=' << "\033[0m";
     std::cout.flush();
 
-    std::cout << "\033[" << windowLeftPointY + WIN_MENU_HORAXIS - 2 << ";" << windowLeftPointX << "H";
+    std::cout << "\033["
+              << windowLeftPointY + WIN_MENU_HORAXIS - 2 << ";" << windowLeftPointX
+              << "H";
     for (int i = 0; i <= WIN_MENU_LONAXIS - 1; i++)
         std::cout << "\033[32m" << '=' << "\033[0m";
     std::cout.flush();
 
     for (int i = 0; i <= WIN_MENU_HORAXIS - 2; i++)
     {
-        std::cout << "\033[" << windowLeftPointY + i << ";" << windowLeftPointX << "H";
+        std::cout << "\033["
+                  << windowLeftPointY + i << ";" << windowLeftPointX
+                  << "H";
         std::cout << "|";
         std::cout.flush();
     }
     for (int i = 0; i <= WIN_MENU_HORAXIS - 2; i++)
     {
-        std::cout << "\033[" << windowLeftPointY + i << ";" << windowLeftPointX + WIN_MENU_LONAXIS << "H";
+        std::cout << "\033["
+                  << windowLeftPointY + i << ";" << windowLeftPointX + WIN_MENU_LONAXIS
+                  << "H";
         std::cout << "|";
         std::cout.flush();
     }
@@ -2512,7 +2685,8 @@ printMenu_:
         if (time(0) % 1 == 0)
         {
             GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-            if ((csbi.dwSize.X > WIN_MENU_LONAXIS && tempWindowLeftPointX <= WIN_MENU_LONAXIS) || (csbi.dwSize.Y > WIN_MENU_HORAXIS - 1 && tempWindowLeftPointY <= WIN_MENU_HORAXIS - 1))
+            if ((csbi.dwSize.X > WIN_MENU_LONAXIS && tempWindowLeftPointX <= WIN_MENU_LONAXIS) ||
+                (csbi.dwSize.Y > WIN_MENU_HORAXIS - 1 && tempWindowLeftPointY <= WIN_MENU_HORAXIS - 1))
             {
                 system("cls");
                 goto printMenu_;
@@ -2528,14 +2702,17 @@ printMenu_:
                 }
                 system("cls");
                 WindowDisplay warningWindow;
-                warningWindow.init_New_Window((csbi.dwSize.X - 26) / 2, (csbi.dwSize.Y - 5) / 2, 26, 5, 0x0, 0xc);
+                warningWindow.init_New_Window((csbi.dwSize.X - 26) / 2,
+                                              (csbi.dwSize.Y - 5) / 2,
+                                              26, 5, 0x0, 0xc);
                 warningWindow.cui_Basic_Fill(' ');
                 warningWindow.put_In_Text(0, 1, " Window Size is Invalid");
                 warningWindow.display_Window_Str();
                 continue;
             }
 
-            if (csbi.dwSize.X != tempWindowLeftPointX || csbi.dwSize.Y != tempWindowLeftPointY)
+            if (csbi.dwSize.X != tempWindowLeftPointX ||
+                csbi.dwSize.Y != tempWindowLeftPointY)
             {
                 tempWindowLeftPointX = csbi.dwSize.X;
                 tempWindowLeftPointY = csbi.dwSize.Y;
@@ -2552,7 +2729,10 @@ printMenu_:
         }
         if (GetAsyncKeyState('A') & 0x8000) // 检查A键是否被按下
         {
-            MessageBoxExA(GetConsoleWindow(), "Copyright 2023 Zhou Xu.All rights reserved.", (VERSION_TXT), MB_OK | MB_ICONASTERISK | MB_TOPMOST, 0);
+            MessageBoxExA(GetConsoleWindow(),
+                          "Copyright 2023 Zhou Xu.All rights reserved.",
+                          (VERSION_TXT),
+                          MB_OK | MB_ICONASTERISK | MB_TOPMOST, 0);
             continue;
         }
         if (GetAsyncKeyState('G') & 0x8000) // 检查G键是否被按下
@@ -2574,7 +2754,8 @@ printMenu_:
         {
             break;
         }
-        if (is_esc_permitted == true && (GetAsyncKeyState(VK_ESCAPE) & 0x8000)) // 检查ESC键是否被按下
+        if (is_esc_permitted == true &&
+            (GetAsyncKeyState(VK_ESCAPE) & 0x8000)) // 检查ESC键是否被按下
         {
             is_esc_permitted = false;
             system("cls");
